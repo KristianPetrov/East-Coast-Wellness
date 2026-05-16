@@ -1,43 +1,7 @@
 import Image from "next/image";
-
-const featuredProducts = [
-  {
-    name: "BPC-157",
-    amount: "10mg",
-    category: "Research peptide",
-    price: "$89",
-  },
-  {
-    name: "CJC-1295 / Ipamorelin",
-    amount: "10mg / 10mg",
-    category: "Research blend",
-    price: "$129",
-  },
-  {
-    name: "NAD+",
-    amount: "1,000mg",
-    category: "Research compound",
-    price: "$149",
-  },
-  {
-    name: "Tesamorelin",
-    amount: "20mg",
-    category: "Research peptide",
-    price: "$169",
-  },
-  {
-    name: "Selank",
-    amount: "10mg",
-    category: "Research peptide",
-    price: "$79",
-  },
-  {
-    name: "Semax",
-    amount: "10mg",
-    category: "Research peptide",
-    price: "$79",
-  },
-];
+import Link from "next/link";
+import { AddToCartButton } from "./AddToCartButton";
+import { featuredProducts, formatPrice } from "./products";
 
 const catalogSections = [
   {
@@ -88,12 +52,12 @@ export default function Home() {
               Compliance
             </a>
           </nav>
-          <a
-            href="#catalog"
+          <Link
+            href="/store"
             className="rounded-full bg-[#ea7500] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-900/20 transition hover:bg-[#c95f00]"
           >
             Shop Research
-          </a>
+          </Link>
         </header>
 
         <div className="mx-auto grid max-w-7xl gap-12 px-6 pb-20 pt-8 lg:grid-cols-[1.02fr_0.98fr] lg:px-8 lg:pb-28 lg:pt-16">
@@ -111,12 +75,12 @@ export default function Home() {
               presentation.
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <a
-                href="#products"
+              <Link
+                href="/store"
                 className="rounded-full bg-[#171411] px-7 py-4 text-center text-sm font-bold text-white transition hover:bg-[#302821]"
               >
-                Browse Featured Products
-              </a>
+                Browse Store
+              </Link>
               <a
                 href="#compliance"
                 className="rounded-full border border-black/15 bg-white/50 px-7 py-4 text-center text-sm font-bold text-[#171411] transition hover:bg-white"
@@ -192,9 +156,12 @@ export default function Home() {
                     View available research products
                   </p>
                 </div>
-                <span className="rounded-full bg-[#fff2e4] px-4 py-2 text-sm font-bold text-[#bf5700]">
+                <Link
+                  href="/store"
+                  className="rounded-full bg-[#fff2e4] px-4 py-2 text-sm font-bold text-[#bf5700] transition hover:bg-[#ffe5ca]"
+                >
                   Shop
-                </span>
+                </Link>
               </div>
             </article>
           ))}
@@ -223,9 +190,18 @@ export default function Home() {
             {featuredProducts.map((product) => (
               <article
                 key={product.name}
-                className="rounded-3xl border border-white/10 bg-white/6 p-6 shadow-xl shadow-black/20 transition hover:border-[#ea7500]/60 hover:bg-white/9"
+                className="overflow-hidden rounded-3xl border border-white/10 bg-white/6 shadow-xl shadow-black/20 transition hover:border-[#ea7500]/60 hover:bg-white/9"
               >
-                <div className="mb-8 flex items-start justify-between gap-4">
+                <div className="bg-white/95 p-5">
+                  <Image
+                    src={product.image}
+                    alt={`${product.name} ${product.amount} research product`}
+                    width={640}
+                    height={640}
+                    className="aspect-square w-full rounded-3xl object-contain"
+                  />
+                </div>
+                <div className="flex items-start justify-between gap-4 p-6 pb-8">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#ff9b32]">
                       {product.category}
@@ -236,16 +212,14 @@ export default function Home() {
                     <p className="mt-1 text-white/55">{product.amount}</p>
                   </div>
                   <p className="rounded-full bg-white px-4 py-2 text-sm font-bold text-[#171411]">
-                    {product.price}
+                    {formatPrice(product.price)}
                   </p>
                 </div>
-                <div className="flex items-center justify-between border-t border-white/10 pt-5">
+                <div className="flex items-center justify-between border-t border-white/10 p-6 pt-5">
                   <span className="text-sm text-white/55">
                     For research use only
                   </span>
-                  <button className="rounded-full bg-[#ea7500] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#ff8a16]">
-                    Add to Cart
-                  </button>
+                  <AddToCartButton product={product} />
                 </div>
               </article>
             ))}
