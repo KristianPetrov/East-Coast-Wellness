@@ -3,24 +3,26 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { AddToCartButton } from "../AddToCartButton";
-import { formatPrice, products } from "../products";
+import { ProductCard } from "../ProductCard";
+import { groupProducts, productGroups, products } from "../products";
 
 export function StorePage() {
   const [query, setQuery] = useState("");
 
-  const filteredProducts = useMemo(() => {
+  const filteredGroups = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
     if (!normalizedQuery) {
-      return products;
+      return productGroups;
     }
 
-    return products.filter((product) =>
-      [product.name, product.amount, product.category]
-        .join(" ")
-        .toLowerCase()
-        .includes(normalizedQuery),
+    return groupProducts(
+      products.filter((product) =>
+        [product.name, product.amount, product.category]
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedQuery),
+      ),
     );
   }, [query]);
 
@@ -38,12 +40,26 @@ export function StorePage() {
               priority
             />
           </Link>
-          <Link
-            href="/checkout"
-            className="rounded-full bg-[#171411] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#302821]"
-          >
-            Checkout
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/orders/lookup"
+              className="hidden rounded-full border border-black/10 bg-white px-5 py-3 text-sm font-bold text-[#171411] transition hover:bg-[#fff2e4] sm:inline-block"
+            >
+              Order Lookup
+            </Link>
+            <Link
+              href="/login"
+              className="hidden rounded-full border border-black/10 bg-white px-5 py-3 text-sm font-bold text-[#171411] transition hover:bg-[#fff2e4] sm:inline-block"
+            >
+              Login
+            </Link>
+            <Link
+              href="/checkout"
+              className="rounded-full bg-[#171411] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#302821]"
+            >
+              Checkout
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -83,51 +99,18 @@ export function StorePage() {
 
         <div className="mt-8 flex items-center justify-between text-sm text-[#62564c]">
           <p>
-            Showing {filteredProducts.length} of {products.length} products
+            Showing {filteredGroups.length} of {productGroups.length} products
           </p>
           <p>For research use only</p>
         </div>
 
         <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredProducts.map((product) => (
-            <article
-              key={product.id}
-              className="overflow-hidden rounded-3xl border border-black/10 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-orange-950/10"
-            >
-              <div className="bg-[#fffaf2] p-5">
-                <Image
-                  src={product.image}
-                  alt={`${product.name} ${product.amount} research product`}
-                  width={640}
-                  height={640}
-                  className="aspect-square w-full rounded-3xl object-contain"
-                />
-              </div>
-              <div className="flex items-start justify-between gap-4 p-6 pb-8">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#c95f00]">
-                    {product.category}
-                  </p>
-                  <h2 className="mt-3 text-2xl font-semibold">
-                    {product.name}
-                  </h2>
-                  <p className="mt-1 text-[#74675d]">{product.amount}</p>
-                </div>
-                <p className="rounded-full bg-[#fff2e4] px-4 py-2 text-sm font-bold text-[#bf5700]">
-                  {formatPrice(product.price)}
-                </p>
-              </div>
-              <div className="flex items-center justify-between border-t border-black/10 p-6 pt-5">
-                <span className="text-sm text-[#74675d]">
-                  Research use only
-                </span>
-                <AddToCartButton product={product} />
-              </div>
-            </article>
+          {filteredGroups.map((group) => (
+            <ProductCard key={group.id} group={group} />
           ))}
         </div>
 
-        {filteredProducts.length === 0 ? (
+        {filteredGroups.length === 0 ? (
           <div className="mt-8 rounded-3xl border border-black/10 bg-white p-8 text-center">
             <h2 className="text-2xl font-semibold">No products found</h2>
             <p className="mt-2 text-[#62564c]">

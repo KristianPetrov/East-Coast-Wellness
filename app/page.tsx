@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { AddToCartButton } from "./AddToCartButton";
-import { featuredProducts, formatPrice } from "./products";
+import { ProductCard } from "./ProductCard";
+import { featuredProductGroups } from "./products";
 
 const catalogSections = [
   {
@@ -51,6 +51,9 @@ export default function Home() {
             <a href="#compliance" className="transition hover:text-[#171411]">
               Compliance
             </a>
+            <Link href="/orders/lookup" className="transition hover:text-[#171411]">
+              Order Lookup
+            </Link>
           </nav>
           <Link
             href="/store"
@@ -187,41 +190,8 @@ export default function Home() {
           </div>
 
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {featuredProducts.map((product) => (
-              <article
-                key={product.name}
-                className="overflow-hidden rounded-3xl border border-white/10 bg-white/6 shadow-xl shadow-black/20 transition hover:border-[#ea7500]/60 hover:bg-white/9"
-              >
-                <div className="bg-white/95 p-5">
-                  <Image
-                    src={product.image}
-                    alt={`${product.name} ${product.amount} research product`}
-                    width={640}
-                    height={640}
-                    className="aspect-square w-full rounded-3xl object-contain"
-                  />
-                </div>
-                <div className="flex items-start justify-between gap-4 p-6 pb-8">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#ff9b32]">
-                      {product.category}
-                    </p>
-                    <h3 className="mt-3 text-2xl font-semibold">
-                      {product.name}
-                    </h3>
-                    <p className="mt-1 text-white/55">{product.amount}</p>
-                  </div>
-                  <p className="rounded-full bg-white px-4 py-2 text-sm font-bold text-[#171411]">
-                    {formatPrice(product.price)}
-                  </p>
-                </div>
-                <div className="flex items-center justify-between border-t border-white/10 p-6 pt-5">
-                  <span className="text-sm text-white/55">
-                    For research use only
-                  </span>
-                  <AddToCartButton product={product} />
-                </div>
-              </article>
+            {featuredProductGroups.map((group) => (
+              <ProductCard key={group.id} group={group} theme="dark" />
             ))}
           </div>
         </div>

@@ -2,19 +2,30 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { FormEvent, useEffect, useState, useTransition } from "react";
 import {
   cartUpdatedEvent,
   getCartCount,
   getCartTotal,
   readCart,
+  saveCart,
   type CartItem,
 } from "../cart";
 import { formatPrice } from "../products";
+import { createOrder, type CheckoutResult } from "./actions";
+
+const paymentMethodLabels = {
+  cashapp: "Cash App",
+  venmo: "Venmo",
+  zelle: "Zelle",
+} as const;
 
 export function CheckoutPage() {
+  const router = useRouter();
   const [items, setItems] = useState<CartItem[]>([]);
-  const [submitted, setSubmitted] = useState(false);
+  const [result, setResult] = useState<CheckoutResult | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     const syncCart = () => setItems(readCart());
@@ -31,7 +42,35 @@ export function CheckoutPage() {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitted(true);
+    const formData = new FormData(event.currentTarget);
+
+    startTransition(async () => {
+      const orderResult = await createOrder({
+        name: String(formData.get("name") ?? ""),
+        phone: String(formData.get("phone") ?? ""),
+        email: String(formData.get("email") ?? ""),
+        address: String(formData.get("address") ?? ""),
+        address2: String(formData.get("address2") ?? ""),
+        city: String(formData.get("city") ?? ""),
+        state: String(formData.get("state") ?? ""),
+        zip: String(formData.get("zip") ?? ""),
+        paymentMethod: String(formData.get("paymentMethod") ?? "cashapp") as
+          | "cashapp"
+          | "venmo"
+          | "zelle",
+        items: items.map((item) => ({
+          id: item.id,
+          quantity: item.quantity,
+        })),
+      });
+
+      setResult(orderResult);
+
+      if (orderResult.ok) {
+        saveCart([]);
+        router.refresh();
+      }
+    });
   }
 
   const count = getCartCount(items);
@@ -164,17 +203,57 @@ export function CheckoutPage() {
               are not for human or animal consumption.
             </div>
 
+            <fieldset className="grid gap-3 rounded-3xl border border-black/10 bg-[#fffaf2] p-5">
+              <legend className="px-2 text-sm font-bold uppercase tracking-[0.2em] text-[#a24b00]">
+                Manual Payment
+              </legend>
+              {Object.entries(paymentMethodLabels).map(([value, label]) => (
+                <label
+                  key={value}
+                  className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-[#3b332d]"
+                >
+                  <input
+                    name="paymentMethod"
+                    type="radio"
+                    value={value}
+                    defaultChecked={value === "cashapp"}
+                    className="h-4 w-4 accent-[#ea7500]"
+                  />
+                  {label}
+                </label>
+              ))}
+              <p className="text-sm leading-6 text-[#62564c]">
+                Payment instructions are shown after checkout and included in
+                the order email. Orders remain pending until payment is marked
+                paid by the admin.
+              </p>
+            </fieldset>
+
             <button
               type="submit"
-              className="rounded-full bg-[#171411] px-7 py-4 text-sm font-bold text-white transition hover:bg-[#302821]"
+              disabled={isPending || items.length === 0}
+              className="rounded-full bg-[#171411] px-7 py-4 text-sm font-bold text-white transition hover:bg-[#302821] disabled:cursor-not-allowed disabled:bg-[#8b8178]"
             >
-              Submit Checkout Details
+              {isPending ? "Creating Order..." : "Create Order"}
             </button>
 
-            {submitted ? (
-              <p className="rounded-2xl bg-[#e8f5df] p-4 text-sm font-semibold text-[#2f5f1e]">
-                Checkout details captured for this demo. Connect a backend or
-                payment provider to process orders.
+            {result?.ok ? (
+              <div className="rounded-2xl bg-[#e8f5df] p-4 text-sm font-semibold text-[#2f5f1e]">
+                <p>Order {result.orderNumber} was created.</p>
+                <Link
+                  href={`/orders/${result.orderNumber}?email=${encodeURIComponent(
+                    result.email,
+                  )}`}
+                  className="mt-2 inline-block underline"
+                >
+                  View order status
+                </Link>
+              </div>
+            ) : null}
+
+            {result && !result.ok ? (
+              <p className="rounded-2xl bg-[#fff1f1] p-4 text-sm font-semibold text-[#8a1f1f]">
+                {result.message}
               </p>
             ) : null}
           </form>

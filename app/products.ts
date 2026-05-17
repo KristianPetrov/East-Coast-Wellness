@@ -7,6 +7,46 @@ export type Product = {
   image: string;
 };
 
+export type ProductGroup = {
+  id: string;
+  name: string;
+  category: string;
+  variants: Product[];
+};
+
+function variantSortKey(amount: string) {
+  const match = amount.match(/[\d,]+/);
+  return match ? Number.parseFloat(match[0].replace(/,/g, "")) : 0;
+}
+
+function slugifyName(name: string) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+export function groupProducts(items: Product[]): ProductGroup[] {
+  const grouped = new Map<string, Product[]>();
+
+  for (const product of items) {
+    const existing = grouped.get(product.name) ?? [];
+    existing.push(product);
+    grouped.set(product.name, existing);
+  }
+
+  return Array.from(grouped.entries())
+    .map(([name, variants]) => ({
+      id: slugifyName(name),
+      name,
+      category: variants[0].category,
+      variants: [...variants].sort(
+        (a, b) => variantSortKey(a.amount) - variantSortKey(b.amount),
+      ),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
 export const products: Product[] = [
   {
     id: "aicar-50mg",
@@ -258,15 +298,19 @@ export const products: Product[] = [
   },
 ];
 
-export const featuredProducts = products.filter((product) =>
-  [
-    "bpc-157-10mg",
-    "cjc-ipamorelin-10mg-10mg",
-    "nad-1000mg",
-    "tesamorelin-10mg",
-    "selank-10mg",
-    "semax-10mg",
-  ].includes(product.id),
+export const productGroups = groupProducts(products);
+
+const featuredProductNames = [
+  "BPC-157",
+  "CJC-1295 / Ipamorelin",
+  "NAD+",
+  "Tesamorelin",
+  "Selank",
+  "Semax",
+];
+
+export const featuredProductGroups = productGroups.filter((group) =>
+  featuredProductNames.includes(group.name),
 );
 
 export function formatPrice(price: number) {
