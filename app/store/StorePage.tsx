@@ -74,7 +74,7 @@ export function StorePage() {
             </h1>
           </div>
           <p className="text-lg leading-8 text-[#62564c]">
-            Browse research-use peptides, blends, sprays, and supplies by name,
+            Browse research-use molecules, blends, sprays, and supplies by name,
             amount, or category. Product information is for identification and
             cataloging only.
           </p>

@@ -20,3 +20,24 @@ body {
 html {
   scroll-behavior: smooth;
 }
+
+@keyframes featured-slideshow-progress {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.featured-slideshow-progress {
+  animation: featured-slideshow-progress 5.5s linear forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .featured-slideshow-progress {
+    animation: none;
+    transform: scaleX(1);
+  }
+}

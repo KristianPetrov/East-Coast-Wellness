@@ -3,7 +3,7 @@ import { StorePage } from "./StorePage";
 
 export const metadata: Metadata = {
   title: "Store | East Coast Wellness",
-  description: "Search East Coast Wellness research-use peptide products.",
+  description: "Search East Coast Wellness research-use molecule products.",
 };
 
 export default function Page() {

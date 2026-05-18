@@ -1,25 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ProductCard } from "./ProductCard";
+import { FeaturedProductsSlideshow } from "./FeaturedProductsSlideshow";
 import { featuredProductGroups } from "./products";
-
-const catalogSections = [
-  {
-    title: "A-K Collection",
-    image: "/ecw-a-k.PNG",
-    alt: "East Coast Wellness research vials from A through K",
-  },
-  {
-    title: "L-R Collection",
-    image: "/ecw-l-r.PNG",
-    alt: "East Coast Wellness research vials from L through R",
-  },
-  {
-    title: "S-Z Collection",
-    image: "/ecw-s-z.PNG",
-    alt: "East Coast Wellness research vials from S through Z",
-  },
-];
 
 const standards = [
   "Research-use-only labeling",
@@ -42,8 +24,8 @@ export default function Home() {
             priority
           />
           <nav className="hidden items-center gap-8 text-sm font-medium text-[#5f544a] md:flex">
-            <a href="#catalog" className="transition hover:text-[#171411]">
-              Catalog
+            <a href="#products" className="transition hover:text-[#171411]">
+              Featured
             </a>
             <a href="#quality" className="transition hover:text-[#171411]">
               Quality
@@ -69,11 +51,11 @@ export default function Home() {
               Premium research supply
             </p>
             <h1 className="max-w-3xl text-5xl font-semibold tracking-tighter text-[#171411] sm:text-6xl lg:text-7xl">
-              Precision peptide catalog for qualified research.
+              Precision molecule catalog for qualified research.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-[#5f544a]">
               East Coast Wellness offers a refined shopping experience for
-              research-use peptides, blends, sprays, and reconstitution
+              research-use molecules, blends, sprays, and reconstitution
               solutions with clear documentation and compliant product
               presentation.
             </p>
@@ -122,78 +104,33 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="catalog" className="mx-auto max-w-7xl px-6 py-20 lg:px-8">
-        <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-[0.28em] text-[#c95f00]">
-              Organized catalog
-            </p>
-            <h2 className="mt-3 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
-              Built to feel premium from search to checkout.
-            </h2>
-          </div>
-          <p className="text-lg leading-8 text-[#62564c]">
-            Browse the core East Coast Wellness research lineup by alphabetized
-            collections, with product language focused on identity, format,
-            amount, and research-use status.
-          </p>
-        </div>
-
-        <div className="mt-10 grid gap-5 md:grid-cols-3">
-          {catalogSections.map((section) => (
-            <article
-              key={section.title}
-              className="group overflow-hidden rounded-[1.75rem] border border-black/10 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-orange-950/10"
-            >
-              <Image
-                src={section.image}
-                alt={section.alt}
-                width={1024}
-                height={512}
-                className="aspect-[1.45] w-full object-cover transition duration-500 group-hover:scale-105"
-              />
-              <div className="flex items-center justify-between p-6">
-                <div>
-                  <h3 className="text-xl font-semibold">{section.title}</h3>
-                  <p className="mt-1 text-sm text-[#74675d]">
-                    View available research products
-                  </p>
-                </div>
-                <Link
-                  href="/store"
-                  className="rounded-full bg-[#fff2e4] px-4 py-2 text-sm font-bold text-[#bf5700] transition hover:bg-[#ffe5ca]"
-                >
-                  Shop
-                </Link>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
-
       <section id="products" className="bg-[#171411] py-20 text-white">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+          <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
             <div>
               <p className="text-sm font-bold uppercase tracking-[0.28em] text-[#ff9b32]">
                 Featured products
               </p>
               <h2 className="mt-3 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
-                Research products, presented clearly.
+                Highlights from the research lineup.
               </h2>
             </div>
-            <p className="max-w-xl leading-7 text-white/65">
-              Product cards avoid wellness outcomes and medical claims while
-              keeping the shopping experience direct, polished, and easy to
-              scan.
-            </p>
+            <div className="flex max-w-xl flex-col gap-4">
+              <p className="leading-7 text-white/65">
+                A curated rotation of core molecules, signature blends, and
+                research compounds — browse strengths, compare formats, and add
+                to cart without leaving the homepage.
+              </p>
+              <Link
+                href="/store"
+                className="inline-flex w-fit rounded-full border border-white/20 bg-white/10 px-6 py-3 text-sm font-bold text-white transition hover:border-[#ff9b32]/50 hover:bg-white/15"
+              >
+                View full store
+              </Link>
+            </div>
           </div>
 
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {featuredProductGroups.map((group) => (
-              <ProductCard key={group.id} group={group} theme="dark" />
-            ))}
-          </div>
+          <FeaturedProductsSlideshow groups={featuredProductGroups} />
         </div>
       </section>
 

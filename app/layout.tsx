@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "East Coast Wellness | Research Peptide Store",
+  title: "East Coast Wellness | Research Molecule Store",
   description:
-    "Premium research-use peptide catalog and storefront for East Coast Wellness.",
+    "Premium research-use molecule catalog and storefront for East Coast Wellness.",
 };
 
 export default function RootLayout({
