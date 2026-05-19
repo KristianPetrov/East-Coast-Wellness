@@ -18,6 +18,10 @@ export default async function Page() {
     redirect("/login?callbackUrl=/account/orders");
   }
 
+  if (session.user.role === "admin") {
+    redirect("/admin");
+  }
+
   const userOrders = await getOrdersForUser(session.user.id);
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import type { InventoryByProductId } from "@/lib/inventory";
 import { ProductCard } from "./ProductCard";
 import type { ProductGroup } from "./products";
 
@@ -8,10 +9,12 @@ const AUTO_ADVANCE_MS = 5500;
 
 type FeaturedProductsSlideshowProps = {
   groups: ProductGroup[];
+  inventoryByProduct?: InventoryByProductId;
 };
 
 export function FeaturedProductsSlideshow({
   groups,
+  inventoryByProduct,
 }: FeaturedProductsSlideshowProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -68,7 +71,11 @@ export function FeaturedProductsSlideshow({
               className="w-full shrink-0 px-4 py-4 sm:px-6 sm:py-6 lg:px-8"
             >
               <div className="mx-auto max-w-md sm:max-w-lg lg:max-w-xl">
-                <ProductCard group={group} theme="dark" />
+                <ProductCard
+                  group={group}
+                  theme="dark"
+                  inventoryByProduct={inventoryByProduct}
+                />
               </div>
             </div>
           ))}

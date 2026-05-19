@@ -39,6 +39,8 @@ export async function updateInventory(formData: FormData) {
     });
 
   revalidatePath("/admin");
+  revalidatePath("/");
+  revalidatePath("/store");
 }
 
 export async function updateOrderStatus(formData: FormData) {

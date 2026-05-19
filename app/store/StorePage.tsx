@@ -1,12 +1,17 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { Logo } from "../Logo";
 import { ProductCard } from "../ProductCard";
 import { groupProducts, productGroups, products } from "../products";
+import type { InventoryByProductId } from "@/lib/inventory";
 
-export function StorePage() {
+type StorePageProps = {
+  inventoryByProduct: InventoryByProductId;
+};
+
+export function StorePage({ inventoryByProduct }: StorePageProps) {
   const [query, setQuery] = useState("");
 
   const filteredGroups = useMemo(() => {
@@ -30,16 +35,7 @@ export function StorePage() {
     <main className="min-h-screen bg-[#f7f2ea] pb-32 text-[#171411]">
       <header className="border-b border-black/10 bg-[#fff8ef]">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 lg:px-8">
-          <Link href="/">
-            <Image
-              src="/ecw-logo-horizontal.PNG"
-              alt="East Coast Wellness"
-              width={832}
-              height={225}
-              className="h-auto w-48 sm:w-64"
-              priority
-            />
-          </Link>
+          <Logo href="/" priority />
           <div className="flex items-center gap-3">
             <Link
               href="/orders/lookup"
@@ -106,7 +102,11 @@ export function StorePage() {
 
         <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {filteredGroups.map((group) => (
-            <ProductCard key={group.id} group={group} />
+            <ProductCard
+              key={group.id}
+              group={group}
+              inventoryByProduct={inventoryByProduct}
+            />
           ))}
         </div>
 

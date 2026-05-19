@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
+import { getInventoryByProductId } from "@/lib/inventory";
 import { FeaturedProductsSlideshow } from "./FeaturedProductsSlideshow";
+import { Logo } from "./Logo";
 import { featuredProductGroups } from "./products";
 
 const standards = [
@@ -10,19 +12,14 @@ const standards = [
   "Responsive client support",
 ];
 
-export default function Home() {
+export default async function Home() {
+  const inventoryByProduct = await getInventoryByProductId();
+
   return (
     <main className="min-h-screen overflow-hidden bg-[#f7f2ea] text-[#171411]">
       <section className="relative border-b border-black/10 bg-[radial-gradient(circle_at_top_right,rgba(234,117,0,0.18),transparent_32%),linear-gradient(135deg,#fffaf2_0%,#efe4d6_100%)]">
         <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 lg:px-8">
-          <Image
-            src="/ecw-logo-horizontal.PNG"
-            alt="East Coast Wellness"
-            width={832}
-            height={225}
-            className="h-auto w-48 sm:w-64"
-            priority
-          />
+          <Logo priority />
           <nav className="hidden items-center gap-8 text-sm font-medium text-[#5f544a] md:flex">
             <a href="#products" className="transition hover:text-[#171411]">
               Featured
@@ -130,7 +127,10 @@ export default function Home() {
             </div>
           </div>
 
-          <FeaturedProductsSlideshow groups={featuredProductGroups} />
+          <FeaturedProductsSlideshow
+            groups={featuredProductGroups}
+            inventoryByProduct={inventoryByProduct}
+          />
         </div>
       </section>
 
@@ -197,13 +197,7 @@ export default function Home() {
       <footer className="bg-[#0d0a08] px-6 py-10 text-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div className="w-fit rounded-2xl bg-white p-3">
-            <Image
-              src="/ecw-logo-horizontal.PNG"
-              alt="East Coast Wellness"
-              width={832}
-              height={225}
-              className="h-auto w-52"
-            />
+            <Logo className="h-auto w-52" />
           </div>
           <div className="max-w-2xl text-sm leading-6 text-white/55 md:text-right">
             For research use only. Not for human or animal consumption. Not

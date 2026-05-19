@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { formatCents } from "@/lib/money";
 import {
+  getPaymentDetails,
   getOrderByNumberForEmail,
-  paymentInstructions,
-  paymentMethodLabels,
 } from "@/lib/orders";
 
 type PageProps = {
@@ -46,6 +45,7 @@ export default async function Page({ params, searchParams }: PageProps) {
   }
 
   const { order, items } = result;
+  const paymentDetails = getPaymentDetails(order);
 
   return (
     <main className="min-h-screen bg-[#f7f2ea] px-6 py-14 text-[#171411]">
@@ -78,7 +78,7 @@ export default async function Page({ params, searchParams }: PageProps) {
                 {order.paymentStatus}
               </p>
               <p className="mt-2 text-sm text-[#62564c]">
-                {paymentMethodLabels[order.paymentMethod]}
+                {paymentDetails.label}
               </p>
             </div>
             <div className="rounded-3xl bg-[#fff8ef] p-5">
@@ -99,8 +99,18 @@ export default async function Page({ params, searchParams }: PageProps) {
                 Manual Payment
               </p>
               <p className="mt-2 text-sm leading-6 text-[#62564c]">
-                {paymentInstructions[order.paymentMethod]}
+                {paymentDetails.instruction}
               </p>
+              {paymentDetails.href ? (
+                <Link
+                  href={paymentDetails.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 inline-block rounded-full bg-[#171411] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#302821]"
+                >
+                  {paymentDetails.actionLabel}
+                </Link>
+              ) : null}
             </div>
           </div>
 

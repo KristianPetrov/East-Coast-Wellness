@@ -2,15 +2,21 @@
 
 import Image from "next/image";
 import { useMemo, useState } from "react";
+import type { InventoryByProductId } from "@/lib/inventory";
 import { AddToCartButton } from "./AddToCartButton";
 import { formatPrice, type ProductGroup } from "./products";
 
 type ProductCardProps = {
   group: ProductGroup;
   theme?: "light" | "dark";
+  inventoryByProduct?: InventoryByProductId;
 };
 
-export function ProductCard({ group, theme = "light" }: ProductCardProps) {
+export function ProductCard({
+  group,
+  theme = "light",
+  inventoryByProduct,
+}: ProductCardProps) {
   const [selectedId, setSelectedId] = useState(group.variants[0].id);
 
   const selected = useMemo(
@@ -22,6 +28,9 @@ export function ProductCard({ group, theme = "light" }: ProductCardProps) {
 
   const hasMultipleVariants = group.variants.length > 1;
   const isDark = theme === "dark";
+  const selectedInventory = inventoryByProduct?.[selected.id];
+  const showsInventory = selectedInventory !== undefined;
+  const isOutOfStock = showsInventory && selectedInventory <= 0;
 
   return (
     <article
@@ -83,6 +92,9 @@ export function ProductCard({ group, theme = "light" }: ProductCardProps) {
                 {group.variants.map((variant) => (
                   <option key={variant.id} value={variant.id}>
                     {variant.amount} — {formatPrice(variant.price)}
+                    {inventoryByProduct?.[variant.id] === 0
+                      ? " — Out of stock"
+                      : ""}
                   </option>
                 ))}
               </select>
@@ -109,6 +121,26 @@ export function ProductCard({ group, theme = "light" }: ProductCardProps) {
         </p>
       </div>
 
+      {showsInventory ? (
+        <div className="px-6 pb-4">
+          <span
+            className={
+              isOutOfStock
+                ? isDark
+                  ? "inline-flex rounded-full bg-red-500/15 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-red-200"
+                  : "inline-flex rounded-full bg-[#fff1f1] px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-[#8a1f1f]"
+                : isDark
+                  ? "inline-flex rounded-full bg-emerald-400/15 px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-emerald-100"
+                  : "inline-flex rounded-full bg-[#e8f5df] px-3 py-1 text-xs font-bold uppercase tracking-[0.16em] text-[#2f5f1e]"
+            }
+          >
+            {isOutOfStock
+              ? "Out of stock"
+              : `${selectedInventory} in stock`}
+          </span>
+        </div>
+      ) : null}
+
       <div
         className={
           isDark
@@ -123,7 +155,11 @@ export function ProductCard({ group, theme = "light" }: ProductCardProps) {
         >
           {isDark ? "For research use only" : "Research use only"}
         </span>
-        <AddToCartButton key={selected.id} product={selected} />
+        <AddToCartButton
+          key={selected.id}
+          product={selected}
+          maxQuantity={selectedInventory}
+        />
       </div>
     </article>
   );

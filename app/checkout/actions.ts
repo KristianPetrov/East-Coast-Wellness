@@ -1,7 +1,14 @@
 "use server";
 
+import { and, eq, gte, inArray, sql } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { orderItems, orders, type PaymentMethod } from "@/db/schema";
+import {
+  orderItems,
+  orders,
+  productInventory,
+  type PaymentMethod,
+} from "@/db/schema";
 import { getAuthSession } from "@/auth";
 import {
   buildOrderItems,
@@ -10,7 +17,9 @@ import {
 } from "@/lib/orders";
 import { sendOrderCreatedEmail } from "@/lib/email";
 
-const paymentMethods = new Set<PaymentMethod>(["cashapp", "venmo", "zelle"]);
+const paymentMethods = new Set<PaymentMethod>(["venmo", "zelle"]);
+
+class StockError extends Error {}
 
 type CheckoutInput = {
   name: string;
@@ -48,33 +57,93 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
       0,
     );
 
-    const [order] = await db
-      .insert(orders)
-      .values({
-        orderNumber: createOrderNumber(),
-        userId: session?.user?.id,
-        customerName: input.name.trim(),
-        customerEmail: email,
-        customerPhone: input.phone.trim(),
-        addressLine1: input.address.trim(),
-        addressLine2: input.address2?.trim() || null,
-        city: input.city.trim(),
-        state: input.state.trim(),
-        postalCode: input.zip.trim(),
-        paymentMethod: input.paymentMethod,
-        totalCents,
-      })
-      .returning();
+    const result = await db.transaction(async (tx) => {
+      const inventoryRows = await tx
+        .select()
+        .from(productInventory)
+        .where(
+          inArray(
+            productInventory.productId,
+            builtItems.map((item) => item.productId),
+          ),
+        );
+      const inventoryByProduct = new Map(
+        inventoryRows.map((row) => [row.productId, row.quantity]),
+      );
+      const unavailableItem = builtItems.find(
+        (item) => (inventoryByProduct.get(item.productId) ?? 0) < item.quantity,
+      );
 
-    const insertedItems = await db
-      .insert(orderItems)
-      .values(builtItems.map((item) => ({ ...item, orderId: order.id })))
-      .returning();
+      if (unavailableItem) {
+        return {
+          ok: false as const,
+          message: `${unavailableItem.name} ${unavailableItem.amount} does not have enough stock for that quantity.`,
+        };
+      }
 
-    await sendOrderCreatedEmail(order, insertedItems);
+      for (const item of builtItems) {
+        const updatedInventory = await tx
+          .update(productInventory)
+          .set({
+            quantity: sql`${productInventory.quantity} - ${item.quantity}`,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(productInventory.productId, item.productId),
+              gte(productInventory.quantity, item.quantity),
+            ),
+          )
+          .returning({ productId: productInventory.productId });
 
-    return { ok: true, orderNumber: order.orderNumber, email };
+        if (updatedInventory.length === 0) {
+          throw new StockError(
+            `${item.name} ${item.amount} no longer has enough stock for that quantity.`,
+          );
+        }
+      }
+
+      const [order] = await tx
+        .insert(orders)
+        .values({
+          orderNumber: createOrderNumber(),
+          userId: session?.user?.id,
+          customerName: input.name.trim(),
+          customerEmail: email,
+          customerPhone: input.phone.trim(),
+          addressLine1: input.address.trim(),
+          addressLine2: input.address2?.trim() || null,
+          city: input.city.trim(),
+          state: input.state.trim(),
+          postalCode: input.zip.trim(),
+          paymentMethod: input.paymentMethod,
+          totalCents,
+        })
+        .returning();
+
+      const insertedItems = await tx
+        .insert(orderItems)
+        .values(builtItems.map((item) => ({ ...item, orderId: order.id })))
+        .returning();
+
+      return { ok: true as const, order, insertedItems };
+    });
+
+    if (!result.ok) {
+      return result;
+    }
+
+    await sendOrderCreatedEmail(result.order, result.insertedItems);
+    revalidatePath("/");
+    revalidatePath("/store");
+    revalidatePath("/admin");
+
+    return { ok: true, orderNumber: result.order.orderNumber, email };
   } catch (error) {
+    if (error instanceof StockError) {
+      return { ok: false, message: error.message };
+    }
+
     console.error("Failed to create order", error);
     return {
       ok: false,

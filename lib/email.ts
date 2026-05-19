@@ -1,7 +1,7 @@
 import { Resend } from "resend";
 import type { orders, orderItems } from "@/db/schema";
 import { formatCents } from "./money";
-import { paymentInstructions, paymentMethodLabels } from "./orders";
+import { getPaymentDetails } from "./orders";
 
 type Order = typeof orders.$inferSelect;
 type OrderItem = typeof orderItems.$inferSelect;
@@ -11,6 +11,7 @@ const resend = process.env.RESEND_API_KEY
   : null;
 
 function orderHtml(order: Order, items: OrderItem[]) {
+  const paymentDetails = getPaymentDetails(order);
   const itemRows = items
     .map(
       (item) => `
@@ -29,12 +30,13 @@ function orderHtml(order: Order, items: OrderItem[]) {
     <div style="font-family:Arial,sans-serif;color:#171411;line-height:1.5;">
       <h1>Order ${order.orderNumber}</h1>
       <p>Thank you for your order request. Payment is pending until confirmed by East Coast Wellness.</p>
-      <p><strong>Payment method:</strong> ${
-        paymentMethodLabels[order.paymentMethod]
-      }</p>
-      <p><strong>Payment instructions:</strong> ${
-        paymentInstructions[order.paymentMethod]
-      }</p>
+      <p><strong>Payment method:</strong> ${paymentDetails.label}</p>
+      <p><strong>Payment instructions:</strong> ${paymentDetails.instruction}</p>
+      ${
+        paymentDetails.href
+          ? `<p><a href="${paymentDetails.href}" style="display:inline-block;background:#171411;color:#ffffff;text-decoration:none;border-radius:999px;padding:12px 18px;font-weight:700;">${paymentDetails.actionLabel}</a></p>`
+          : ""
+      }
       <table style="width:100%;border-collapse:collapse;margin-top:24px;">
         <thead>
           <tr>

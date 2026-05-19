@@ -12,15 +12,57 @@ export const paymentMethodLabels: Record<PaymentMethod, string> = {
 
 export const paymentInstructions: Record<PaymentMethod, string> = {
   cashapp:
-    process.env.CASHAPP_PAYMENT_HANDLE ??
-    "Send payment through Cash App and include your order number in the note.",
-  venmo:
-    process.env.VENMO_PAYMENT_HANDLE ??
-    "Send payment through Venmo and include your order number in the note.",
-  zelle:
-    process.env.ZELLE_PAYMENT_HANDLE ??
-    "Send payment through Zelle and include your order number in the memo.",
+    "Cash App is no longer accepted. Please contact support for another payment method.",
+  venmo: "Pay @coastalwellnessgroupllc through Venmo.",
+  zelle: "Send Zelle payment to 307-210-6352.",
 };
+
+type OrderPaymentDetailsInput = Pick<
+  typeof orders.$inferSelect,
+  "orderNumber" | "paymentMethod" | "totalCents"
+>;
+
+const venmoHandle = "coastalwellnessgroupllc";
+const zellePhone = "307-210-6352";
+
+export function buildVenmoPaymentUrl(order: OrderPaymentDetailsInput) {
+  const params = new URLSearchParams({
+    txn: "pay",
+    recipients: venmoHandle,
+    amount: (order.totalCents / 100).toFixed(2),
+    note: `East Coast Wellness ${order.orderNumber}`,
+  });
+
+  return `https://venmo.com/?${params.toString()}`;
+}
+
+export function getPaymentDetails(order: OrderPaymentDetailsInput) {
+  if (order.paymentMethod === "venmo") {
+    return {
+      label: paymentMethodLabels.venmo,
+      instruction:
+        "Pay @coastalwellnessgroupllc through Venmo. The link includes your order total and order number.",
+      href: buildVenmoPaymentUrl(order),
+      actionLabel: "Pay with Venmo",
+    };
+  }
+
+  if (order.paymentMethod === "zelle") {
+    return {
+      label: paymentMethodLabels.zelle,
+      instruction: `Send Zelle payment to ${zellePhone} and include ${order.orderNumber} in the memo.`,
+      href: null,
+      actionLabel: null,
+    };
+  }
+
+  return {
+    label: paymentMethodLabels.cashapp,
+    instruction: paymentInstructions.cashapp,
+    href: null,
+    actionLabel: null,
+  };
+}
 
 export type CheckoutCartItem = {
   id: string;

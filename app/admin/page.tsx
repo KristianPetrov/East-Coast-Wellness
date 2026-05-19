@@ -14,8 +14,14 @@ export const metadata: Metadata = {
   description: "Manage East Coast Wellness orders and inventory.",
 };
 
-export default async function Page() {
+type PageProps = {
+  searchParams: Promise<{ tab?: string }>;
+};
+
+export default async function Page({ searchParams }: PageProps) {
   const session = await getAuthSession();
+  const { tab } = await searchParams;
+  const activeTab = tab === "inventory" ? "inventory" : "orders";
 
   if (!session?.user) {
     redirect("/login?callbackUrl=/admin");
@@ -65,43 +71,33 @@ export default async function Page() {
           </Link>
         </div>
 
-        <div className="mt-10 grid gap-8 xl:grid-cols-[0.9fr_1.1fr]">
-          <section className="rounded-4xl border border-black/10 bg-white p-6 shadow-xl shadow-orange-950/10">
-            <h2 className="text-3xl font-semibold tracking-tighter">
-              Product inventory
-            </h2>
-            <div className="mt-6 grid gap-4">
-              {products.map((product) => (
-                <form
-                  key={product.id}
-                  action={updateInventory}
-                  className="grid gap-3 rounded-3xl border border-black/10 bg-[#fffaf2] p-4 sm:grid-cols-[1fr_7rem_auto] sm:items-center"
-                >
-                  <input type="hidden" name="productId" value={product.id} />
-                  <div>
-                    <p className="font-semibold">{product.name}</p>
-                    <p className="text-sm text-[#62564c]">
-                      {product.amount} · {product.id}
-                    </p>
-                  </div>
-                  <input
-                    name="quantity"
-                    type="number"
-                    min={0}
-                    defaultValue={inventoryByProduct.get(product.id) ?? 0}
-                    className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-base outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
-                  />
-                  <button
-                    type="submit"
-                    className="rounded-full bg-[#171411] px-5 py-3 text-sm font-bold text-white"
-                  >
-                    Save
-                  </button>
-                </form>
-              ))}
-            </div>
-          </section>
+        <div className="mt-10 rounded-full border border-black/10 bg-white p-2 shadow-sm">
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Link
+              href="/admin"
+              className={
+                activeTab === "orders"
+                  ? "rounded-full bg-[#171411] px-5 py-3 text-center text-sm font-bold text-white shadow-lg shadow-black/10"
+                  : "rounded-full px-5 py-3 text-center text-sm font-bold text-[#62564c] transition hover:bg-[#fff2e4] hover:text-[#171411]"
+              }
+            >
+              Orders
+            </Link>
+            <Link
+              href="/admin?tab=inventory"
+              className={
+                activeTab === "inventory"
+                  ? "rounded-full bg-[#171411] px-5 py-3 text-center text-sm font-bold text-white shadow-lg shadow-black/10"
+                  : "rounded-full px-5 py-3 text-center text-sm font-bold text-[#62564c] transition hover:bg-[#fff2e4] hover:text-[#171411]"
+              }
+            >
+              Inventory
+            </Link>
+          </div>
+        </div>
 
+        <div className="mt-8">
+          {activeTab === "orders" ? (
           <section className="rounded-4xl border border-black/10 bg-white p-6 shadow-xl shadow-orange-950/10">
             <h2 className="text-3xl font-semibold tracking-tighter">Orders</h2>
             <div className="mt-6 grid gap-5">
@@ -220,6 +216,69 @@ export default async function Page() {
               )}
             </div>
           </section>
+          ) : (
+          <section className="rounded-4xl border border-black/10 bg-white p-6 shadow-xl shadow-orange-950/10">
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+              <div>
+                <h2 className="text-3xl font-semibold tracking-tighter">
+                  Product inventory
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-[#62564c]">
+                  Stock shown here appears on the storefront and is decremented
+                  when checkout creates an order.
+                </p>
+              </div>
+              <p className="rounded-full bg-[#fff2e4] px-4 py-2 text-sm font-bold text-[#a24b00]">
+                {products.length} variants
+              </p>
+            </div>
+            <div className="mt-6 grid gap-4">
+              {products.map((product) => {
+                const quantity = inventoryByProduct.get(product.id) ?? 0;
+
+                return (
+                  <form
+                    key={product.id}
+                    action={updateInventory}
+                    className="grid gap-3 rounded-3xl border border-black/10 bg-[#fffaf2] p-4 transition hover:border-[#ea7500]/30 hover:bg-white sm:grid-cols-[1fr_7rem_auto] sm:items-center"
+                  >
+                    <input type="hidden" name="productId" value={product.id} />
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-semibold">{product.name}</p>
+                        <span
+                          className={
+                            quantity > 0
+                              ? "rounded-full bg-[#e8f5df] px-3 py-1 text-xs font-bold text-[#2f5f1e]"
+                              : "rounded-full bg-[#fff1f1] px-3 py-1 text-xs font-bold text-[#8a1f1f]"
+                          }
+                        >
+                          {quantity > 0 ? `${quantity} in stock` : "Out of stock"}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm text-[#62564c]">
+                        {product.amount} · {product.id}
+                      </p>
+                    </div>
+                    <input
+                      name="quantity"
+                      type="number"
+                      min={0}
+                      defaultValue={quantity}
+                      className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-base outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
+                    />
+                    <button
+                      type="submit"
+                      className="rounded-full bg-[#171411] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#302821]"
+                    >
+                      Save
+                    </button>
+                  </form>
+                );
+              })}
+            </div>
+          </section>
+          )}
         </div>
       </section>
     </main>

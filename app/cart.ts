@@ -21,21 +21,78 @@ export function readCart(): CartItem[] {
 }
 
 export function saveCart(items: CartItem[]) {
-  window.localStorage.setItem(cartStorageKey, JSON.stringify(items));
+  window.localStorage.setItem(
+    cartStorageKey,
+    JSON.stringify(items.filter((item) => item.quantity > 0)),
+  );
   window.dispatchEvent(new Event(cartUpdatedEvent));
 }
 
-export function addProductToCart(product: Product) {
+export function addProductToCart(product: Product, maxQuantity?: number) {
   const cart = readCart();
   const existingItem = cart.find((item) => item.id === product.id);
 
   if (existingItem) {
+    if (maxQuantity !== undefined && existingItem.quantity >= maxQuantity) {
+      return false;
+    }
+
     existingItem.quantity += 1;
     saveCart(cart);
-    return;
+    return true;
+  }
+
+  if (maxQuantity !== undefined && maxQuantity <= 0) {
+    return false;
   }
 
   saveCart([...cart, { ...product, quantity: 1 }]);
+  return true;
+}
+
+export function updateCartItemQuantity(productId: string, quantity: number) {
+  const normalizedQuantity = Math.max(0, Math.floor(quantity));
+  const cart = readCart();
+
+  saveCart(
+    cart
+      .map((item) =>
+        item.id === productId ? { ...item, quantity: normalizedQuantity } : item,
+      )
+      .filter((item) => item.quantity > 0),
+  );
+}
+
+export function incrementCartItem(productId: string) {
+  const cart = readCart();
+
+  saveCart(
+    cart.map((item) =>
+      item.id === productId ? { ...item, quantity: item.quantity + 1 } : item,
+    ),
+  );
+}
+
+export function decrementCartItem(productId: string) {
+  const cart = readCart();
+
+  saveCart(
+    cart
+      .map((item) =>
+        item.id === productId
+          ? { ...item, quantity: Math.max(0, item.quantity - 1) }
+          : item,
+      )
+      .filter((item) => item.quantity > 0),
+  );
+}
+
+export function removeCartItem(productId: string) {
+  saveCart(readCart().filter((item) => item.id !== productId));
+}
+
+export function clearCart() {
+  saveCart([]);
 }
 
 export function getCartTotal(items: CartItem[]) {

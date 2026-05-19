@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getInventoryByProductId } from "@/lib/inventory";
 import { StorePage } from "./StorePage";
 
 export const metadata: Metadata = {
@@ -6,6 +7,8 @@ export const metadata: Metadata = {
   description: "Search East Coast Wellness research-use molecule products.",
 };
 
-export default function Page() {
-  return <StorePage />;
+export default async function Page() {
+  const inventoryByProduct = await getInventoryByProductId();
+
+  return <StorePage inventoryByProduct={inventoryByProduct} />;
 }

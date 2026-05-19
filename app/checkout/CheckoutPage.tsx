@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import { Logo } from "../Logo";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState, useTransition } from "react";
 import {
@@ -16,7 +16,6 @@ import { formatPrice } from "../products";
 import { createOrder, type CheckoutResult } from "./actions";
 
 const paymentMethodLabels = {
-  cashapp: "Cash App",
   venmo: "Venmo",
   zelle: "Zelle",
 } as const;
@@ -54,8 +53,7 @@ export function CheckoutPage() {
         city: String(formData.get("city") ?? ""),
         state: String(formData.get("state") ?? ""),
         zip: String(formData.get("zip") ?? ""),
-        paymentMethod: String(formData.get("paymentMethod") ?? "cashapp") as
-          | "cashapp"
+        paymentMethod: String(formData.get("paymentMethod") ?? "venmo") as
           | "venmo"
           | "zelle",
         items: items.map((item) => ({
@@ -80,16 +78,7 @@ export function CheckoutPage() {
     <main className="min-h-screen bg-[#f7f2ea] pb-32 text-[#171411]">
       <header className="border-b border-black/10 bg-[#fff8ef]">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 lg:px-8">
-          <Link href="/">
-            <Image
-              src="/ecw-logo-horizontal.PNG"
-              alt="East Coast Wellness"
-              width={832}
-              height={225}
-              className="h-auto w-48 sm:w-64"
-              priority
-            />
-          </Link>
+          <Logo href="/" priority />
           <Link
             href="/store"
             className="rounded-full bg-[#ea7500] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#c95f00]"
@@ -216,7 +205,7 @@ export function CheckoutPage() {
                     name="paymentMethod"
                     type="radio"
                     value={value}
-                    defaultChecked={value === "cashapp"}
+                    defaultChecked={value === "venmo"}
                     className="h-4 w-4 accent-[#ea7500]"
                   />
                   {label}
