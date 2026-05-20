@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getCurrentPricingTier } from "@/lib/member-pricing";
 import { CheckoutPage } from "./CheckoutPage";
 
 export const metadata: Metadata = {
@@ -6,6 +7,8 @@ export const metadata: Metadata = {
   description: "Enter checkout and shipping details for East Coast Wellness.",
 };
 
-export default function Page() {
-  return <CheckoutPage />;
+export default async function Page() {
+  const pricingTier = await getCurrentPricingTier();
+
+  return <CheckoutPage pricingTier={pricingTier} />;
 }

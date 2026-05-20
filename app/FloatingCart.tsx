@@ -6,6 +6,7 @@ import {
   cartUpdatedEvent,
   clearCart,
   decrementCartItem,
+  getCartItemPrice,
   getCartCount,
   getCartTotal,
   incrementCartItem,
@@ -14,9 +15,17 @@ import {
   updateCartItemQuantity,
   type CartItem,
 } from "./cart";
-import { formatPrice } from "./products";
+import {
+  formatPrice,
+  getProductPackageLabel,
+  type PricingTier,
+} from "./products";
 
-export function FloatingCart() {
+type FloatingCartProps = {
+  pricingTier: PricingTier;
+};
+
+export function FloatingCart({ pricingTier }: FloatingCartProps) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -34,7 +43,7 @@ export function FloatingCart() {
   }, []);
 
   const count = getCartCount(items);
-  const total = getCartTotal(items);
+  const total = getCartTotal(items, pricingTier);
   const hasItems = items.length > 0;
 
   return (
@@ -79,8 +88,11 @@ export function FloatingCart() {
                         <p className="mt-0.5 line-clamp-2 text-xs leading-4 text-white/55">
                           {item.amount}
                         </p>
+                        <p className="mt-1 text-xs text-white/45">
+                          {getProductPackageLabel(item.packageType)}
+                        </p>
                         <p className="mt-1 text-xs font-bold text-[#ff9b32]">
-                          {formatPrice(item.price)} each
+                          {formatPrice(getCartItemPrice(item, pricingTier))} each
                         </p>
                       </div>
                       <button
@@ -125,7 +137,9 @@ export function FloatingCart() {
                         </button>
                       </div>
                       <p className="text-right text-sm font-semibold">
-                        {formatPrice(item.price * item.quantity)}
+                        {formatPrice(
+                          getCartItemPrice(item, pricingTier) * item.quantity,
+                        )}
                       </p>
                     </div>
                   </article>

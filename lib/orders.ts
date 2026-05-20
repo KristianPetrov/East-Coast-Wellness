@@ -1,7 +1,15 @@
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { orderItems, orders, type PaymentMethod } from "@/db/schema";
-import { products } from "@/app/products";
+import {
+  getProductPackageLabel,
+  getProductPackageSize,
+  getProductPrice,
+  hasKitPricing,
+  products,
+  type PricingTier,
+  type ProductPackageType,
+} from "@/app/products";
 import { dollarsToCents } from "./money";
 
 export const paymentMethodLabels: Record<PaymentMethod, string> = {
@@ -16,6 +24,19 @@ export const paymentInstructions: Record<PaymentMethod, string> = {
   venmo: "Pay @coastalwellnessgroupllc through Venmo.",
   zelle: "Send Zelle payment to 307-210-6352.",
 };
+
+export const shippingOptions = {
+  standard: {
+    label: "Standard shipping",
+    priceCents: 1500,
+  },
+  overnight: {
+    label: "Overnight shipping",
+    priceCents: 5000,
+  },
+} as const;
+
+export type ShippingMethod = keyof typeof shippingOptions;
 
 type OrderPaymentDetailsInput = Pick<
   typeof orders.$inferSelect,
@@ -66,6 +87,7 @@ export function getPaymentDetails(order: OrderPaymentDetailsInput) {
 
 export type CheckoutCartItem = {
   id: string;
+  packageType?: ProductPackageType;
   quantity: number;
 };
 
@@ -74,24 +96,38 @@ export function createOrderNumber() {
   return `ECW-${Date.now().toString(36).toUpperCase()}-${random}`;
 }
 
-export function buildOrderItems(cartItems: CheckoutCartItem[]) {
+export function buildOrderItems(
+  cartItems: CheckoutCartItem[],
+  pricingTier: PricingTier,
+) {
   const productById = new Map(products.map((product) => [product.id, product]));
 
   return cartItems.map((item) => {
     const product = productById.get(item.id);
     const quantity = Number(item.quantity);
+    const packageType = item.packageType === "kit" ? "kit" : "vial";
 
-    if (!product || !Number.isInteger(quantity) || quantity < 1) {
+    if (
+      !product ||
+      !Number.isInteger(quantity) ||
+      quantity < 1 ||
+      (packageType === "kit" && !hasKitPricing(product))
+    ) {
       throw new Error("Your cart contains an unavailable product.");
     }
+
+    const packageSize = getProductPackageSize(packageType);
 
     return {
       productId: product.id,
       name: product.name,
-      amount: product.amount,
+      amount: `${product.amount} · ${getProductPackageLabel(packageType)}`,
       category: product.category,
-      priceCents: dollarsToCents(product.price),
+      priceCents: dollarsToCents(
+        getProductPrice(product, pricingTier, packageType),
+      ),
       quantity,
+      stockQuantity: quantity * packageSize,
     };
   });
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { getCurrentPricingTier } from "@/lib/member-pricing";
 import { FloatingCart } from "./FloatingCart";
 import "./globals.css";
 
@@ -19,11 +20,13 @@ export const metadata: Metadata = {
     "Premium research-use molecule catalog and storefront for East Coast Wellness.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pricingTier = await getCurrentPricingTier();
+
   return (
     <html
       lang="en"
@@ -31,7 +34,7 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col">
         {children}
-        <FloatingCart />
+        <FloatingCart pricingTier={pricingTier} />
       </body>
     </html>
   );

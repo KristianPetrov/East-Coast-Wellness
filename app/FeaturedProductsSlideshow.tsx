@@ -3,18 +3,20 @@
 import { useCallback, useEffect, useState } from "react";
 import type { InventoryByProductId } from "@/lib/inventory";
 import { ProductCard } from "./ProductCard";
-import type { ProductGroup } from "./products";
+import type { PricingTier, ProductGroup } from "./products";
 
 const AUTO_ADVANCE_MS = 5500;
 
 type FeaturedProductsSlideshowProps = {
   groups: ProductGroup[];
   inventoryByProduct?: InventoryByProductId;
+  pricingTier: PricingTier;
 };
 
 export function FeaturedProductsSlideshow({
   groups,
   inventoryByProduct,
+  pricingTier,
 }: FeaturedProductsSlideshowProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -75,6 +77,7 @@ export function FeaturedProductsSlideshow({
                   group={group}
                   theme="dark"
                   inventoryByProduct={inventoryByProduct}
+                  pricingTier={pricingTier}
                 />
               </div>
             </div>

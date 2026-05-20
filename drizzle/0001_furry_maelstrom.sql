@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "member_pricing_enabled" boolean DEFAULT false NOT NULL;

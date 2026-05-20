@@ -1,8 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getInventoryByProductId } from "@/lib/inventory";
+import { getCurrentPricingTier } from "@/lib/member-pricing";
 import { FeaturedProductsSlideshow } from "./FeaturedProductsSlideshow";
 import { Logo } from "./Logo";
+import { MobileNav } from "./MobileNav";
 import { featuredProductGroups } from "./products";
 
 const standards = [
@@ -13,7 +15,10 @@ const standards = [
 ];
 
 export default async function Home() {
-  const inventoryByProduct = await getInventoryByProductId();
+  const [inventoryByProduct, pricingTier] = await Promise.all([
+    getInventoryByProductId(),
+    getCurrentPricingTier(),
+  ]);
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#f7f2ea] text-[#171411]">
@@ -34,12 +39,31 @@ export default async function Home() {
               Order Lookup
             </Link>
           </nav>
-          <Link
-            href="/store"
-            className="rounded-full bg-[#ea7500] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-900/20 transition hover:bg-[#c95f00]"
-          >
-            Shop Research
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className="hidden rounded-full border border-black/10 bg-white/60 px-5 py-3 text-sm font-semibold text-[#171411] transition hover:bg-white sm:inline-block"
+            >
+              Login
+            </Link>
+            <Link
+              href="/store"
+              className="rounded-full bg-[#ea7500] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-900/20 transition hover:bg-[#c95f00]"
+            >
+              Shop Research
+            </Link>
+            <MobileNav
+              className="md:hidden"
+              links={[
+                { href: "#products", label: "Featured" },
+                { href: "#quality", label: "Quality" },
+                { href: "#compliance", label: "Compliance" },
+                { href: "/orders/lookup", label: "Order Lookup" },
+                { href: "/login", label: "Login" },
+                { href: "/store", label: "Shop Research" },
+              ]}
+            />
+          </div>
         </header>
 
         <div className="mx-auto grid max-w-7xl gap-12 px-6 pb-20 pt-8 lg:grid-cols-[1.02fr_0.98fr] lg:px-8 lg:pb-28 lg:pt-16">
@@ -130,6 +154,7 @@ export default async function Home() {
           <FeaturedProductsSlideshow
             groups={featuredProductGroups}
             inventoryByProduct={inventoryByProduct}
+            pricingTier={pricingTier}
           />
         </div>
       </section>

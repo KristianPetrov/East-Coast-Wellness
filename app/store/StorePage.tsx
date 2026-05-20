@@ -3,15 +3,22 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Logo } from "../Logo";
+import { MobileNav } from "../MobileNav";
 import { ProductCard } from "../ProductCard";
-import { groupProducts, productGroups, products } from "../products";
-import type { InventoryByProductId } from "@/lib/inventory";
+import {
+  groupProducts,
+  productGroups,
+  products,
+  type PricingTier,
+} from "../products";
+import type { InventoryByProductId }  from "@/lib/inventory";
 
 type StorePageProps = {
   inventoryByProduct: InventoryByProductId;
+  pricingTier: PricingTier;
 };
 
-export function StorePage({ inventoryByProduct }: StorePageProps) {
+export function StorePage({ inventoryByProduct, pricingTier }: StorePageProps) {
   const [query, setQuery] = useState("");
 
   const filteredGroups = useMemo(() => {
@@ -51,10 +58,18 @@ export function StorePage({ inventoryByProduct }: StorePageProps) {
             </Link>
             <Link
               href="/checkout"
-              className="rounded-full bg-[#171411] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#302821]"
+              className="hidden rounded-full bg-[#171411] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#302821] sm:inline-block"
             >
               Checkout
             </Link>
+            <MobileNav
+              className="sm:hidden"
+              links={[
+                { href: "/orders/lookup", label: "Order Lookup" },
+                { href: "/login", label: "Login" },
+                { href: "/checkout", label: "Checkout" },
+              ]}
+            />
           </div>
         </div>
       </header>
@@ -88,7 +103,7 @@ export function StorePage({ inventoryByProduct }: StorePageProps) {
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search BPC-157, NAD+, research blend..."
+            placeholder="Search BPC-15                                                7, NAD+, research blend..."
             className="w-full rounded-3xl border border-black/10 bg-[#fffaf2] px-5 py-4 text-lg outline-none transition placeholder:text-[#9a8f84] focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
           />
         </div>
@@ -100,12 +115,13 @@ export function StorePage({ inventoryByProduct }: StorePageProps) {
           <p>For research use only</p>
         </div>
 
-        <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
           {filteredGroups.map((group) => (
             <ProductCard
               key={group.id}
               group={group}
               inventoryByProduct={inventoryByProduct}
+              pricingTier={pricingTier}
             />
           ))}
         </div>

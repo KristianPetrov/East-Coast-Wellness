@@ -4,13 +4,16 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import {
+  orderItems,
   orders,
   productInventory,
+  users,
   type Carrier,
   type PaymentStatus,
   type ShippingStatus,
 } from "@/db/schema";
 import { getAuthSession } from "@/auth";
+import { sendOrderStatusUpdatedEmail } from "@/lib/email";
 
 async function requireAdmin() {
   const session = await getAuthSession();
@@ -43,6 +46,26 @@ export async function updateInventory(formData: FormData) {
   revalidatePath("/store");
 }
 
+export async function updateMemberPricing(formData: FormData) {
+  await requireAdmin();
+
+  const userId = String(formData.get("userId") ?? "");
+  const memberPricingEnabled = formData.get("memberPricingEnabled") === "on";
+
+  if (!userId) {
+    throw new Error("Account is required.");
+  }
+
+  await db
+    .update(users)
+    .set({ memberPricingEnabled, updatedAt: new Date() })
+    .where(eq(users.id, userId));
+
+  revalidatePath("/admin");
+  revalidatePath("/");
+  revalidatePath("/store");
+}
+
 export async function updateOrderStatus(formData: FormData) {
   await requireAdmin();
 
@@ -61,7 +84,7 @@ export async function updateOrderStatus(formData: FormData) {
     throw new Error("Order is required.");
   }
 
-  await db
+  const [order] = await db
     .update(orders)
     .set({
       paymentStatus,
@@ -70,7 +93,17 @@ export async function updateOrderStatus(formData: FormData) {
       trackingNumber: trackingNumber || null,
       updatedAt: new Date(),
     })
-    .where(eq(orders.id, orderId));
+    .where(eq(orders.id, orderId))
+    .returning();
+
+  if (order) {
+    const items = await db
+      .select()
+      .from(orderItems)
+      .where(eq(orderItems.orderId, order.id));
+
+    await sendOrderStatusUpdatedEmail(order, items);
+  }
 
   revalidatePath("/admin");
 }

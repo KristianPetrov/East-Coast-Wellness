@@ -1,4 +1,5 @@
 import {
+  boolean,
   integer,
   pgEnum,
   pgTable,
@@ -29,6 +30,9 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   role: userRoleEnum("role").notNull().default("user"),
+  memberPricingEnabled: boolean("member_pricing_enabled")
+    .notNull()
+    .default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

@@ -2,27 +2,43 @@
 
 import Link from "next/link";
 import { Logo } from "../Logo";
+import { MobileNav } from "../MobileNav";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState, useTransition } from "react";
 import {
   cartUpdatedEvent,
   getCartCount,
+  getCartItemPrice,
   getCartTotal,
   readCart,
   saveCart,
   type CartItem,
 } from "../cart";
-import { formatPrice } from "../products";
+import {
+  formatPrice,
+  getProductPackageLabel,
+  type PricingTier,
+} from "../products";
 import { createOrder, type CheckoutResult } from "./actions";
+import {
+  shippingOptions,
+  type ShippingMethod,
+} from "@/lib/orders";
 
 const paymentMethodLabels = {
   venmo: "Venmo",
   zelle: "Zelle",
 } as const;
 
-export function CheckoutPage() {
+type CheckoutPageProps = {
+  pricingTier: PricingTier;
+};
+
+export function CheckoutPage({ pricingTier }: CheckoutPageProps) {
   const router = useRouter();
   const [items, setItems] = useState<CartItem[]>([]);
+  const [shippingMethod, setShippingMethod] =
+    useState<ShippingMethod>("standard");
   const [result, setResult] = useState<CheckoutResult | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -53,11 +69,15 @@ export function CheckoutPage() {
         city: String(formData.get("city") ?? ""),
         state: String(formData.get("state") ?? ""),
         zip: String(formData.get("zip") ?? ""),
+        shippingMethod: String(
+          formData.get("shippingMethod") ?? "standard",
+        ) as ShippingMethod,
         paymentMethod: String(formData.get("paymentMethod") ?? "venmo") as
           | "venmo"
           | "zelle",
         items: items.map((item) => ({
-          id: item.id,
+          id: item.productId,
+          packageType: item.packageType,
           quantity: item.quantity,
         })),
       });
@@ -72,19 +92,31 @@ export function CheckoutPage() {
   }
 
   const count = getCartCount(items);
-  const total = getCartTotal(items);
+  const subtotal = getCartTotal(items, pricingTier);
+  const shippingPrice = shippingOptions[shippingMethod].priceCents / 100;
+  const total = subtotal + shippingPrice;
 
   return (
     <main className="min-h-screen bg-[#f7f2ea] pb-32 text-[#171411]">
       <header className="border-b border-black/10 bg-[#fff8ef]">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 lg:px-8">
           <Logo href="/" priority />
-          <Link
-            href="/store"
-            className="rounded-full bg-[#ea7500] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#c95f00]"
-          >
-            Back to Store
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/store"
+              className="hidden rounded-full bg-[#ea7500] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#c95f00] sm:inline-block"
+            >
+              Back to Store
+            </Link>
+            <MobileNav
+              className="sm:hidden"
+              links={[
+                { href: "/store", label: "Back to Store" },
+                { href: "/orders/lookup", label: "Order Lookup" },
+                { href: "/login", label: "Login" },
+              ]}
+            />
+          </div>
         </div>
       </header>
 
@@ -194,6 +226,31 @@ export function CheckoutPage() {
 
             <fieldset className="grid gap-3 rounded-3xl border border-black/10 bg-[#fffaf2] p-5">
               <legend className="px-2 text-sm font-bold uppercase tracking-[0.2em] text-[#a24b00]">
+                Shipping
+              </legend>
+              {Object.entries(shippingOptions).map(([value, option]) => (
+                <label
+                  key={value}
+                  className="flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-[#3b332d]"
+                >
+                  <span className="flex items-center gap-3">
+                    <input
+                      name="shippingMethod"
+                      type="radio"
+                      value={value}
+                      checked={shippingMethod === value}
+                      onChange={() => setShippingMethod(value as ShippingMethod)}
+                      className="h-4 w-4 accent-[#ea7500]"
+                    />
+                    {option.label}
+                  </span>
+                  <span>{formatPrice(option.priceCents / 100)}</span>
+                </label>
+              ))}
+            </fieldset>
+
+            <fieldset className="grid gap-3 rounded-3xl border border-black/10 bg-[#fffaf2] p-5">
+              <legend className="px-2 text-sm font-bold uppercase tracking-[0.2em] text-[#a24b00]">
                 Manual Payment
               </legend>
               {Object.entries(paymentMethodLabels).map(([value, label]) => (
@@ -262,11 +319,14 @@ export function CheckoutPage() {
                   <div>
                     <p className="font-semibold">{item.name}</p>
                     <p className="mt-1 text-sm text-white/55">
-                      {item.amount} • Qty {item.quantity}
+                      {item.amount} • {getProductPackageLabel(item.packageType)} •
+                      Qty {item.quantity}
                     </p>
                   </div>
                   <p className="font-semibold">
-                    {formatPrice(item.price * item.quantity)}
+                    {formatPrice(
+                      getCartItemPrice(item, pricingTier) * item.quantity,
+                    )}
                   </p>
                 </div>
               ))
@@ -278,11 +338,21 @@ export function CheckoutPage() {
             )}
           </div>
 
-          <div className="mt-6 flex items-center justify-between border-t border-white/10 pt-5">
-            <span className="text-white/65">
-              {count} {count === 1 ? "item" : "items"}
-            </span>
-            <span className="text-3xl font-semibold">{formatPrice(total)}</span>
+          <div className="mt-6 space-y-3 border-t border-white/10 pt-5">
+            <div className="flex items-center justify-between text-sm text-white/65">
+              <span>
+                Subtotal · {count} {count === 1 ? "item" : "items"}
+              </span>
+              <span>{formatPrice(subtotal)}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm text-white/65">
+              <span>{shippingOptions[shippingMethod].label}</span>
+              <span>{formatPrice(shippingPrice)}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-white/65">Total</span>
+              <span className="text-3xl font-semibold">{formatPrice(total)}</span>
+            </div>
           </div>
         </aside>
       </section>

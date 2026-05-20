@@ -4,10 +4,14 @@ import { redirect } from "next/navigation";
 import { desc } from "drizzle-orm";
 import { getAuthSession } from "@/auth";
 import { db } from "@/db";
-import { orderItems, orders, productInventory } from "@/db/schema";
+import { orderItems, orders, productInventory, users } from "@/db/schema";
 import { products } from "@/app/products";
 import { formatCents } from "@/lib/money";
-import { updateInventory, updateOrderStatus } from "./actions";
+import {
+  updateInventory,
+  updateMemberPricing,
+  updateOrderStatus,
+} from "./actions";
 
 export const metadata: Metadata = {
   title: "Admin Dashboard | East Coast Wellness",
@@ -21,7 +25,8 @@ type PageProps = {
 export default async function Page({ searchParams }: PageProps) {
   const session = await getAuthSession();
   const { tab } = await searchParams;
-  const activeTab = tab === "inventory" ? "inventory" : "orders";
+  const activeTab =
+    tab === "inventory" || tab === "accounts" ? tab : "orders";
 
   if (!session?.user) {
     redirect("/login?callbackUrl=/admin");
@@ -42,10 +47,11 @@ export default async function Page({ searchParams }: PageProps) {
     );
   }
 
-  const [inventoryRows, orderRows, itemRows] = await Promise.all([
+  const [inventoryRows, orderRows, itemRows, userRows] = await Promise.all([
     db.select().from(productInventory),
     db.select().from(orders).orderBy(desc(orders.createdAt)),
     db.select().from(orderItems),
+    db.select().from(users).orderBy(desc(users.createdAt)),
   ]);
   const inventoryByProduct = new Map(
     inventoryRows.map((row) => [row.productId, row.quantity]),
@@ -72,7 +78,7 @@ export default async function Page({ searchParams }: PageProps) {
         </div>
 
         <div className="mt-10 rounded-full border border-black/10 bg-white p-2 shadow-sm">
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2 sm:grid-cols-3">
             <Link
               href="/admin"
               className={
@@ -92,6 +98,16 @@ export default async function Page({ searchParams }: PageProps) {
               }
             >
               Inventory
+            </Link>
+            <Link
+              href="/admin?tab=accounts"
+              className={
+                activeTab === "accounts"
+                  ? "rounded-full bg-[#171411] px-5 py-3 text-center text-sm font-bold text-white shadow-lg shadow-black/10"
+                  : "rounded-full px-5 py-3 text-center text-sm font-bold text-[#62564c] transition hover:bg-[#fff2e4] hover:text-[#171411]"
+              }
+            >
+              Accounts
             </Link>
           </div>
         </div>
@@ -216,7 +232,7 @@ export default async function Page({ searchParams }: PageProps) {
               )}
             </div>
           </section>
-          ) : (
+          ) : activeTab === "inventory" ? (
           <section className="rounded-4xl border border-black/10 bg-white p-6 shadow-xl shadow-orange-950/10">
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
               <div>
@@ -276,6 +292,69 @@ export default async function Page({ searchParams }: PageProps) {
                   </form>
                 );
               })}
+            </div>
+          </section>
+          ) : (
+          <section className="rounded-4xl border border-black/10 bg-white p-6 shadow-xl shadow-orange-950/10">
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+              <div>
+                <h2 className="text-3xl font-semibold tracking-tighter">
+                  Account pricing
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-[#62564c]">
+                  Enable special member pricing for individual accounts. Retail
+                  pricing remains the default for everyone else.
+                </p>
+              </div>
+              <p className="rounded-full bg-[#fff2e4] px-4 py-2 text-sm font-bold text-[#a24b00]">
+                {userRows.length} accounts
+              </p>
+            </div>
+            <div className="mt-6 grid gap-4">
+              {userRows.map((user) => (
+                <form
+                  key={user.id}
+                  action={updateMemberPricing}
+                  className="grid gap-4 rounded-3xl border border-black/10 bg-[#fffaf2] p-4 transition hover:border-[#ea7500]/30 hover:bg-white sm:grid-cols-[1fr_auto_auto] sm:items-center"
+                >
+                  <input type="hidden" name="userId" value={user.id} />
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold">{user.name}</p>
+                      <span
+                        className={
+                          user.memberPricingEnabled
+                            ? "rounded-full bg-[#e8f5df] px-3 py-1 text-xs font-bold text-[#2f5f1e]"
+                            : "rounded-full bg-white px-3 py-1 text-xs font-bold text-[#62564c]"
+                        }
+                      >
+                        {user.memberPricingEnabled ? "Member pricing" : "Retail pricing"}
+                      </span>
+                      {user.role === "admin" ? (
+                        <span className="rounded-full bg-[#171411] px-3 py-1 text-xs font-bold text-white">
+                          Admin
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-1 text-sm text-[#62564c]">{user.email}</p>
+                  </div>
+                  <label className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-[#3b332d]">
+                    <input
+                      name="memberPricingEnabled"
+                      type="checkbox"
+                      defaultChecked={user.memberPricingEnabled}
+                      className="h-4 w-4 accent-[#ea7500]"
+                    />
+                    Special member pricing
+                  </label>
+                  <button
+                    type="submit"
+                    className="rounded-full bg-[#171411] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#302821]"
+                  >
+                    Save
+                  </button>
+                </form>
+              ))}
             </div>
           </section>
           )}

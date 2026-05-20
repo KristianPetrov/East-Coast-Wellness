@@ -10,10 +10,13 @@ import {
   type PaymentMethod,
 } from "@/db/schema";
 import { getAuthSession } from "@/auth";
+import { getCurrentPricingTier } from "@/lib/member-pricing";
 import {
   buildOrderItems,
   createOrderNumber,
+  shippingOptions,
   type CheckoutCartItem,
+  type ShippingMethod,
 } from "@/lib/orders";
 import { sendOrderCreatedEmail } from "@/lib/email";
 
@@ -30,6 +33,7 @@ type CheckoutInput = {
   city: string;
   state: string;
   zip: string;
+  shippingMethod: ShippingMethod;
   paymentMethod: PaymentMethod;
   items: CheckoutCartItem[];
 };
@@ -42,7 +46,8 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
   try {
     const session = await getAuthSession();
     const email = input.email.trim().toLowerCase();
-    const builtItems = buildOrderItems(input.items);
+    const pricingTier = await getCurrentPricingTier();
+    const builtItems = buildOrderItems(input.items, pricingTier);
 
     if (builtItems.length === 0) {
       return { ok: false, message: "Add at least one product before checkout." };
@@ -52,9 +57,16 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
       return { ok: false, message: "Select a supported payment method." };
     }
 
-    const totalCents = builtItems.reduce(
+    const shippingOption = shippingOptions[input.shippingMethod];
+
+    if (!shippingOption) {
+      return { ok: false, message: "Select a supported shipping method." };
+    }
+
+    const shippingPriceCents: number = shippingOption.priceCents;
+    const totalCents = builtItems.reduce<number>(
       (total, item) => total + item.priceCents * item.quantity,
-      0,
+      shippingPriceCents,
     );
 
     const result = await db.transaction(async (tx) => {
@@ -71,7 +83,8 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
         inventoryRows.map((row) => [row.productId, row.quantity]),
       );
       const unavailableItem = builtItems.find(
-        (item) => (inventoryByProduct.get(item.productId) ?? 0) < item.quantity,
+        (item) =>
+          (inventoryByProduct.get(item.productId) ?? 0) < item.stockQuantity,
       );
 
       if (unavailableItem) {
@@ -85,13 +98,13 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
         const updatedInventory = await tx
           .update(productInventory)
           .set({
-            quantity: sql`${productInventory.quantity} - ${item.quantity}`,
+            quantity: sql`${productInventory.quantity} - ${item.stockQuantity}`,
             updatedAt: new Date(),
           })
           .where(
             and(
               eq(productInventory.productId, item.productId),
-              gte(productInventory.quantity, item.quantity),
+              gte(productInventory.quantity, item.stockQuantity),
             ),
           )
           .returning({ productId: productInventory.productId });
@@ -121,9 +134,30 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
         })
         .returning();
 
+      const orderItemValues = [
+        ...builtItems.map((item) => ({
+          orderId: order.id,
+          productId: item.productId,
+          name: item.name,
+          amount: item.amount,
+          category: item.category,
+          priceCents: item.priceCents,
+          quantity: item.quantity,
+        })),
+        {
+          orderId: order.id,
+          productId: `shipping:${input.shippingMethod}`,
+          name: shippingOption.label,
+          amount: "Flat per order",
+          category: "Shipping",
+          priceCents: shippingPriceCents,
+          quantity: 1,
+        },
+      ];
+
       const insertedItems = await tx
         .insert(orderItems)
-        .values(builtItems.map((item) => ({ ...item, orderId: order.id })))
+        .values(orderItemValues)
         .returning();
 
       return { ok: true as const, order, insertedItems };
