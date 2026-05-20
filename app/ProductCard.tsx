@@ -202,22 +202,16 @@ export function ProductCard({
         </div>
       ) : null}
 
-      {showsInventory ? (
+      {showsInventory && !isOutOfStock ? (
         <div className="px-3 pb-2 sm:px-6 sm:pb-4">
           <span
             className={
-              isOutOfStock
-                ? isDark
-                  ? "inline-flex rounded-full bg-red-500/15 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-red-200 sm:px-3 sm:text-xs sm:tracking-[0.16em]"
-                  : "inline-flex rounded-full bg-[#fff1f1] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#8a1f1f] sm:px-3 sm:text-xs sm:tracking-[0.16em]"
-                : isDark
-                  ? "inline-flex rounded-full bg-emerald-400/15 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-100 sm:px-3 sm:text-xs sm:tracking-[0.16em]"
-                  : "inline-flex rounded-full bg-[#e8f5df] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#2f5f1e] sm:px-3 sm:text-xs sm:tracking-[0.16em]"
+              isDark
+                ? "inline-flex rounded-full bg-emerald-400/15 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-100 sm:px-3 sm:text-xs sm:tracking-[0.16em]"
+                : "inline-flex rounded-full bg-[#e8f5df] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#2f5f1e] sm:px-3 sm:text-xs sm:tracking-[0.16em]"
             }
           >
-            {isOutOfStock
-              ? "Out of stock"
-              : `${selectedInventory} ${selectedInventory === 1 ? "vial" : "vials"} left`}
+            {`${selectedInventory} ${selectedInventory === 1 ? "vial" : "vials"} left`}
             {packageType === "kit" && availablePackages !== undefined
               ? ` · ${availablePackages} ${availablePackages === 1 ? "kit" : "kits"} available`
               : ""}
