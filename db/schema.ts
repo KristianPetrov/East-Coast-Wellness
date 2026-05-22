@@ -44,6 +44,13 @@ export const users = pgTable("users", {
 export const productInventory = pgTable("product_inventory", {
   productId: text("product_id").primaryKey(),
   quantity: integer("quantity").notNull().default(0),
+  shipStationInventorySyncStatus: text("ship_station_inventory_sync_status")
+    .notNull()
+    .default("pending"),
+  shipStationInventorySyncError: text("ship_station_inventory_sync_error"),
+  shipStationInventorySyncedAt: timestamp("ship_station_inventory_synced_at", {
+    withTimezone: true,
+  }),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -66,9 +73,27 @@ export const orders = pgTable("orders", {
   shippingStatus: shippingStatusEnum("shipping_status")
     .notNull()
     .default("pending"),
+  orderStatus: text("order_status").notNull().default("active"),
   carrier: carrierEnum("carrier"),
   trackingNumber: text("tracking_number"),
   totalCents: integer("total_cents").notNull(),
+  shipStationShipmentId: text("ship_station_shipment_id"),
+  shipStationExternalShipmentId: text("ship_station_external_shipment_id"),
+  shipStationSyncStatus: text("ship_station_sync_status")
+    .notNull()
+    .default("pending"),
+  shipStationSyncError: text("ship_station_sync_error"),
+  shipStationAddressValidationStatus: text(
+    "ship_station_address_validation_status",
+  ),
+  shipStationAddressValidationMessage: text(
+    "ship_station_address_validation_message",
+  ),
+  shipStationMatchedAddress: text("ship_station_matched_address"),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+  inventoryRestoredAt: timestamp("inventory_restored_at", {
+    withTimezone: true,
+  }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

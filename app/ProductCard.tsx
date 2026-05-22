@@ -39,7 +39,6 @@ export function ProductCard({
     [group.variants, selectedId],
   );
 
-  const hasMultipleVariants = group.variants.length > 1;
   const canBuyKit = hasKitPricing(selected);
   const packageType = canBuyKit ? selectedPackageType : "vial";
   const packageSize = getProductPackageSize(packageType);
@@ -73,8 +72,8 @@ export function ProductCard({
         />
       </div>
 
-      <div className="flex flex-col gap-2 p-3 pb-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:p-6 sm:pb-4">
-        <div className="min-w-0 flex-1">
+      <div className="flex flex-col gap-3 p-3 pb-2 sm:p-6 sm:pb-4">
+        <div className="min-w-0">
           <p
             className={
               isDark
@@ -93,54 +92,42 @@ export function ProductCard({
           >
             {group.name}
           </h2>
-
-          {hasMultipleVariants ? (
-            <label
-              className={
-                isDark
-                  ? "mt-2 block text-xs font-semibold text-white/70 sm:mt-4 sm:text-sm"
-                  : "mt-2 block text-xs font-semibold text-[#62564c] sm:mt-4 sm:text-sm"
-              }
-            >
-              Strength
-              <select
-                value={selectedId}
-                onChange={(event) => {
-                  setSelectedId(event.target.value);
-                  setSelectedPackageType("vial");
-                }}
-                className={
-                  isDark
-                    ? "mt-1.5 w-full rounded-2xl border border-white/15 bg-[#0f0c0a] px-2.5 py-2 text-xs font-medium text-white outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/20 sm:mt-2 sm:px-4 sm:py-3 sm:text-sm"
-                    : "mt-1.5 w-full rounded-2xl border border-black/10 bg-[#fffaf2] px-2.5 py-2 text-xs font-medium text-[#171411] outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15 sm:mt-2 sm:px-4 sm:py-3 sm:text-sm"
-                }
-              >
-                {group.variants.map((variant) => (
-                  <option key={variant.id} value={variant.id}>
-                    {variant.amount} —{" "}
-                    {formatPrice(getProductPrice(variant, pricingTier, "vial"))}
-                    {inventoryByProduct !== undefined &&
-                    (inventoryByProduct[variant.id] ?? 0) <= 0
-                      ? " — Out of stock"
-                      : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : (
-            <p
-              className={
-                isDark
-                  ? "mt-0.5 text-xs text-white/55 sm:mt-1 sm:text-base"
-                  : "mt-0.5 text-xs text-[#74675d] sm:mt-1 sm:text-base"
-              }
-            >
-              {selected.amount}
-            </p>
-          )}
         </div>
 
-        <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
+        <label
+          className={
+            isDark
+              ? "block min-w-0 text-xs font-semibold text-white/70 sm:text-sm"
+              : "block min-w-0 text-xs font-semibold text-[#62564c] sm:text-sm"
+          }
+        >
+          Strength
+          <select
+            value={selectedId}
+            onChange={(event) => {
+              setSelectedId(event.target.value);
+              setSelectedPackageType("vial");
+            }}
+            className={
+              isDark
+                ? "mt-1.5 w-full max-w-full rounded-2xl border border-white/15 bg-[#0f0c0a] px-2.5 py-2 text-xs font-medium text-white outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/20 sm:mt-2 sm:px-4 sm:py-3 sm:text-sm"
+                : "mt-1.5 w-full max-w-full rounded-2xl border border-black/10 bg-[#fffaf2] px-2.5 py-2 text-xs font-medium text-[#171411] outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15 sm:mt-2 sm:px-4 sm:py-3 sm:text-sm"
+            }
+          >
+            {group.variants.map((variant) => (
+              <option key={variant.id} value={variant.id}>
+                {variant.amount} —{" "}
+                {formatPrice(getProductPrice(variant, pricingTier, "vial"))}
+                {inventoryByProduct !== undefined &&
+                (inventoryByProduct[variant.id] ?? 0) <= 0
+                  ? " — Out of stock"
+                  : ""}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           {pricingTier === "member" ? (
             <span
               className={
@@ -153,11 +140,11 @@ export function ProductCard({
             </span>
           ) : null}
           <p
-          className={
-            isDark
-              ? "w-fit shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#171411] sm:px-4 sm:py-2 sm:text-sm"
-              : "w-fit shrink-0 rounded-full bg-[#fff2e4] px-3 py-1.5 text-xs font-bold text-[#bf5700] sm:px-4 sm:py-2 sm:text-sm"
-          }
+            className={
+              isDark
+                ? "rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#171411] sm:px-4 sm:py-2 sm:text-sm"
+                : "rounded-full bg-[#fff2e4] px-3 py-1.5 text-xs font-bold text-[#bf5700] sm:px-4 sm:py-2 sm:text-sm"
+            }
           >
             {formatPrice(selectedPrice)}
           </p>

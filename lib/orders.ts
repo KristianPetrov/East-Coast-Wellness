@@ -25,18 +25,8 @@ export const paymentInstructions: Record<PaymentMethod, string> = {
   zelle: "Send Zelle payment to 307-210-6352.",
 };
 
-export const shippingOptions = {
-  standard: {
-    label: "Standard shipping",
-    priceCents: 1500,
-  },
-  overnight: {
-    label: "Overnight shipping",
-    priceCents: 5000,
-  },
-} as const;
-
-export type ShippingMethod = keyof typeof shippingOptions;
+export type { ShippingMethod } from "./shipping";
+export { shippingOptions } from "./shipping";
 
 type OrderPaymentDetailsInput = Pick<
   typeof orders.$inferSelect,
@@ -44,7 +34,7 @@ type OrderPaymentDetailsInput = Pick<
 >;
 
 const venmoHandle = "coastalwellnessgroupllc";
-const zellePhone = "307-210-6352";
+export const zellePhone = "307-210-6352";
 
 export function buildVenmoPaymentUrl(order: OrderPaymentDetailsInput) {
   const params = new URLSearchParams({
@@ -58,30 +48,11 @@ export function buildVenmoPaymentUrl(order: OrderPaymentDetailsInput) {
 }
 
 export function getPaymentDetails(order: OrderPaymentDetailsInput) {
-  if (order.paymentMethod === "venmo") {
-    return {
-      label: paymentMethodLabels.venmo,
-      instruction:
-        "Pay @coastalwellnessgroupllc through Venmo. The link includes your order total and order number.",
-      href: buildVenmoPaymentUrl(order),
-      actionLabel: "Pay with Venmo",
-    };
-  }
-
-  if (order.paymentMethod === "zelle") {
-    return {
-      label: paymentMethodLabels.zelle,
-      instruction: `Send Zelle payment to ${zellePhone} and include ${order.orderNumber} in the memo.`,
-      href: null,
-      actionLabel: null,
-    };
-  }
-
   return {
-    label: paymentMethodLabels.cashapp,
-    instruction: paymentInstructions.cashapp,
-    href: null,
-    actionLabel: null,
+    label: `${paymentMethodLabels.venmo} or ${paymentMethodLabels.zelle}`,
+    instruction: `Pay by Venmo to @coastalwellnessgroupllc or send Zelle payment to ${zellePhone}. Include ${order.orderNumber} in the memo.`,
+    href: buildVenmoPaymentUrl(order),
+    actionLabel: "Pay with Venmo",
   };
 }
 

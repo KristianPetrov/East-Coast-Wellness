@@ -1,37 +1,38 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ManualPaymentActions } from "@/app/ManualPaymentActions";
 import { formatCents } from "@/lib/money";
 import {
   buildVenmoPaymentUrl,
-  getPaymentDetails,
   getOrderByNumberForEmail,
   zellePhone,
 } from "@/lib/orders";
+import { ManualPaymentActions } from "@/app/ManualPaymentActions";
 
 type PageProps = {
-  params: Promise<{ orderNumber: string }>;
-  searchParams: Promise<{ email?: string }>;
+  searchParams: Promise<{ orderNumber?: string; email?: string }>;
 };
 
 export const metadata: Metadata = {
-  title: "Order Status | East Coast Wellness",
-  description: "View East Coast Wellness order status.",
+  title: "Thank You | East Coast Wellness",
+  description: "East Coast Wellness order confirmation and payment details.",
 };
 
-export default async function Page({ params, searchParams }: PageProps) {
-  const { orderNumber } = await params;
-  const { email } = await searchParams;
-  const result = email
-    ? await getOrderByNumberForEmail(orderNumber, email)
-    : null;
+export default async function Page({ searchParams }: PageProps) {
+  const { orderNumber, email } = await searchParams;
+  const result =
+    orderNumber && email
+      ? await getOrderByNumberForEmail(orderNumber, email)
+      : null;
 
   if (!result) {
     return (
       <main className="min-h-screen bg-[#f7f2ea] px-6 py-14 text-[#171411]">
         <section className="mx-auto max-w-3xl rounded-4xl border border-black/10 bg-white p-8 text-center shadow-xl shadow-orange-950/10">
-          <h1 className="text-4xl font-semibold tracking-tighter">
-            Order not found.
+          <p className="text-sm font-bold uppercase tracking-[0.28em] text-[#c95f00]">
+            Thank You
+          </p>
+          <h1 className="mt-3 text-4xl font-semibold tracking-tighter">
+            We could not load that order.
           </h1>
           <p className="mt-4 text-[#62564c]">
             Check the order number and email address used at checkout.
@@ -40,7 +41,7 @@ export default async function Page({ params, searchParams }: PageProps) {
             href="/orders/lookup"
             className="mt-6 inline-block rounded-full bg-[#171411] px-6 py-3 text-sm font-bold text-white"
           >
-            Try Again
+            Look Up Order
           </Link>
         </section>
       </main>
@@ -48,7 +49,6 @@ export default async function Page({ params, searchParams }: PageProps) {
   }
 
   const { order, items } = result;
-  const paymentDetails = getPaymentDetails(order);
   const venmoUrl = buildVenmoPaymentUrl(order);
   const zelleCopyText = `Send ${formatCents(
     order.totalCents,
@@ -62,14 +62,17 @@ export default async function Page({ params, searchParams }: PageProps) {
         </Link>
         <div className="mt-5 rounded-4xl border border-black/10 bg-white p-8 shadow-xl shadow-orange-950/10">
           <p className="text-sm font-bold uppercase tracking-[0.28em] text-[#c95f00]">
-            Order Status
+            Thank You
           </p>
           <div className="mt-4 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
             <div>
               <h1 className="text-5xl font-semibold tracking-tighter">
-                {order.orderNumber}
+                Your order was received.
               </h1>
-              <p className="mt-3 text-[#62564c]">{order.customerEmail}</p>
+              <p className="mt-4 max-w-2xl text-lg leading-8 text-[#62564c]">
+                Order {order.orderNumber} is pending payment. An email has been
+                sent to {order.customerEmail}.
+              </p>
             </div>
             <p className="text-4xl font-semibold">
               {formatCents(order.totalCents)}
@@ -81,57 +84,26 @@ export default async function Page({ params, searchParams }: PageProps) {
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#a24b00]">
                 Order
               </p>
-              <p className="mt-2 text-xl font-semibold">
-                {order.orderStatus}
-              </p>
-              <p className="mt-2 text-sm text-[#62564c]">
-                {order.orderStatus === "cancelled"
-                  ? "This order has been cancelled."
-                  : paymentDetails.label}
-              </p>
+              <p className="mt-2 text-xl font-semibold">{order.orderStatus}</p>
+              <p className="mt-2 text-sm text-[#62564c]">{order.orderNumber}</p>
             </div>
             <div className="rounded-3xl bg-[#fff8ef] p-5">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#a24b00]">
                 Payment
               </p>
-              <p className="mt-2 text-xl font-semibold">
+              <p className="mt-2 text-xl font-semibold capitalize">
                 {order.paymentStatus}
-              </p>
-              <p className="mt-2 text-sm text-[#62564c]">
-                {paymentDetails.label}
               </p>
             </div>
             <div className="rounded-3xl bg-[#fff8ef] p-5">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#a24b00]">
                 Shipping
               </p>
-              <p className="mt-2 text-xl font-semibold">
+              <p className="mt-2 text-xl font-semibold capitalize">
                 {order.shippingStatus}
-              </p>
-              <p className="mt-2 text-sm text-[#62564c]">
-                {order.carrier && order.trackingNumber
-                  ? `${order.carrier} ${order.trackingNumber}`
-                  : "Tracking will appear here when shipped."}
               </p>
             </div>
           </div>
-
-          {order.orderStatus !== "cancelled" ? (
-            <div className="mt-6 rounded-3xl bg-[#fff8ef] p-5">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#a24b00]">
-                Manual Payment
-              </p>
-              <p className="mt-2 text-sm leading-6 text-[#62564c]">
-                {paymentDetails.instruction} Venmo opens with the order total
-                and {order.orderNumber} already added to the note. For Zelle,
-                copy the details and include the order ID in the memo.
-              </p>
-              <ManualPaymentActions
-                venmoUrl={venmoUrl}
-                zelleCopyText={zelleCopyText}
-              />
-            </div>
-          ) : null}
 
           {order.shipStationAddressValidationStatus ? (
             <div className="mt-6 rounded-3xl border border-black/10 bg-[#fffaf2] p-5">
@@ -154,6 +126,23 @@ export default async function Page({ params, searchParams }: PageProps) {
             </div>
           ) : null}
 
+          {order.orderStatus !== "cancelled" ? (
+            <div className="mt-6 rounded-3xl border border-black/10 bg-[#fffaf2] p-5">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#a24b00]">
+                Complete Payment
+              </p>
+              <p className="mt-3 text-sm leading-6 text-[#62564c]">
+                Venmo opens with the order total and {order.orderNumber} already
+                added to the note. For Zelle, copy the details and include the
+                order ID in the memo.
+              </p>
+              <ManualPaymentActions
+                venmoUrl={venmoUrl}
+                zelleCopyText={zelleCopyText}
+              />
+            </div>
+          ) : null}
+
           <div className="mt-8 divide-y divide-black/10">
             {items.map((item) => (
               <div
@@ -172,6 +161,15 @@ export default async function Page({ params, searchParams }: PageProps) {
               </div>
             ))}
           </div>
+
+          <Link
+            href={`/orders/${order.orderNumber}?email=${encodeURIComponent(
+              order.customerEmail,
+            )}`}
+            className="mt-6 inline-block rounded-full bg-[#ea7500] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#c95f00]"
+          >
+            View Order Status
+          </Link>
         </div>
       </section>
     </main>

@@ -1,7 +1,11 @@
 import { Resend } from "resend";
 import type { orders, orderItems } from "@/db/schema";
 import { formatCents } from "./money";
-import { getPaymentDetails } from "./orders";
+import {
+  buildVenmoPaymentUrl,
+  getPaymentDetails,
+  zellePhone,
+} from "./orders";
 
 type Order = typeof orders.$inferSelect;
 type OrderItem = typeof orderItems.$inferSelect;
@@ -67,6 +71,29 @@ function itemRowsHtml(items: OrderItem[]) {
     .join("");
 }
 
+function manualPaymentHtml(order: Order) {
+  const venmoUrl = buildVenmoPaymentUrl(order);
+
+  return `
+    <div style="margin:20px 0;padding:18px;border-radius:20px;background:#fff8ef;">
+      <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#a24b00;text-transform:uppercase;letter-spacing:0.12em;">Manual Payment Options</p>
+      <p style="margin:0 0 10px;"><strong>Venmo</strong></p>
+      <p style="margin:0 0 12px;color:#62564c;">Pay @coastalwellnessgroupllc. The button includes ${escapeHtml(
+        order.orderNumber,
+      )} in the note.</p>
+      <p style="margin:0 0 18px;"><a href="${escapeHtml(
+        venmoUrl,
+      )}" style="display:inline-block;background:#171411;color:#ffffff;text-decoration:none;border-radius:999px;padding:12px 18px;font-weight:700;">Pay with Venmo</a></p>
+      <p style="margin:0 0 10px;"><strong>Zelle</strong></p>
+      <p style="margin:0;color:#62564c;">Send ${formatCents(
+        order.totalCents,
+      )} to ${escapeHtml(zellePhone)} and include ${escapeHtml(
+        order.orderNumber,
+      )} in the memo.</p>
+    </div>
+  `;
+}
+
 function orderCreatedHtml(order: Order, items: OrderItem[]) {
   const paymentDetails = getPaymentDetails(order);
 
@@ -82,11 +109,7 @@ function orderCreatedHtml(order: Order, items: OrderItem[]) {
           paymentDetails.instruction,
         )}</p>
       </div>
-      ${
-        paymentDetails.href
-          ? `<p><a href="${paymentDetails.href}" style="display:inline-block;background:#171411;color:#ffffff;text-decoration:none;border-radius:999px;padding:12px 18px;font-weight:700;">${paymentDetails.actionLabel}</a></p>`
-          : ""
-      }
+      ${manualPaymentHtml(order)}
       <table style="width:100%;border-collapse:collapse;margin-top:24px;">
         <thead>
           <tr>
@@ -156,6 +179,17 @@ function orderStatusHtml(order: Order, items: OrderItem[]) {
       <p style="margin:0 0 20px;color:#62564c;">There is an update to your East Coast Wellness order.</p>
       <div style="display:grid;gap:12px;margin:20px 0;">
         <div style="padding:16px;border-radius:18px;background:#fff8ef;">
+          <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#a24b00;text-transform:uppercase;letter-spacing:0.12em;">Order</p>
+          <p style="margin:0;font-size:18px;font-weight:700;text-transform:capitalize;">${escapeHtml(
+            order.orderStatus,
+          )}</p>
+          ${
+            order.orderStatus === "cancelled"
+              ? `<p style="margin:8px 0 0;color:#62564c;">This order has been cancelled and its items have been returned to inventory.</p>`
+              : ""
+          }
+        </div>
+        <div style="padding:16px;border-radius:18px;background:#fff8ef;">
           <p style="margin:0 0 4px;font-size:12px;font-weight:700;color:#a24b00;text-transform:uppercase;letter-spacing:0.12em;">Payment</p>
           <p style="margin:0;font-size:18px;font-weight:700;text-transform:capitalize;">${escapeHtml(
             order.paymentStatus,
@@ -175,6 +209,7 @@ function orderStatusHtml(order: Order, items: OrderItem[]) {
           }
         </div>
       </div>
+      ${order.orderStatus === "cancelled" ? "" : manualPaymentHtml(order)}
       <table style="width:100%;border-collapse:collapse;margin-top:24px;">
         <thead>
           <tr>

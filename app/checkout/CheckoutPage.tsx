@@ -23,12 +23,61 @@ import { createOrder, type CheckoutResult } from "./actions";
 import {
   shippingOptions,
   type ShippingMethod,
-} from "@/lib/orders";
+} from "@/lib/shipping";
 
-const paymentMethodLabels = {
-  venmo: "Venmo",
-  zelle: "Zelle",
-} as const;
+const usStates = [
+  ["", "Select state"],
+  ["AL", "Alabama"],
+  ["AK", "Alaska"],
+  ["AZ", "Arizona"],
+  ["AR", "Arkansas"],
+  ["CA", "California"],
+  ["CO", "Colorado"],
+  ["CT", "Connecticut"],
+  ["DE", "Delaware"],
+  ["FL", "Florida"],
+  ["GA", "Georgia"],
+  ["HI", "Hawaii"],
+  ["ID", "Idaho"],
+  ["IL", "Illinois"],
+  ["IN", "Indiana"],
+  ["IA", "Iowa"],
+  ["KS", "Kansas"],
+  ["KY", "Kentucky"],
+  ["LA", "Louisiana"],
+  ["ME", "Maine"],
+  ["MD", "Maryland"],
+  ["MA", "Massachusetts"],
+  ["MI", "Michigan"],
+  ["MN", "Minnesota"],
+  ["MS", "Mississippi"],
+  ["MO", "Missouri"],
+  ["MT", "Montana"],
+  ["NE", "Nebraska"],
+  ["NV", "Nevada"],
+  ["NH", "New Hampshire"],
+  ["NJ", "New Jersey"],
+  ["NM", "New Mexico"],
+  ["NY", "New York"],
+  ["NC", "North Carolina"],
+  ["ND", "North Dakota"],
+  ["OH", "Ohio"],
+  ["OK", "Oklahoma"],
+  ["OR", "Oregon"],
+  ["PA", "Pennsylvania"],
+  ["RI", "Rhode Island"],
+  ["SC", "South Carolina"],
+  ["SD", "South Dakota"],
+  ["TN", "Tennessee"],
+  ["TX", "Texas"],
+  ["UT", "Utah"],
+  ["VT", "Vermont"],
+  ["VA", "Virginia"],
+  ["WA", "Washington"],
+  ["WV", "West Virginia"],
+  ["WI", "Wisconsin"],
+  ["WY", "Wyoming"],
+] as const;
 
 type CheckoutPageProps = {
   pricingTier: PricingTier;
@@ -72,9 +121,6 @@ export function CheckoutPage({ pricingTier }: CheckoutPageProps) {
         shippingMethod: String(
           formData.get("shippingMethod") ?? "standard",
         ) as ShippingMethod,
-        paymentMethod: String(formData.get("paymentMethod") ?? "venmo") as
-          | "venmo"
-          | "zelle",
         items: items.map((item) => ({
           id: item.productId,
           packageType: item.packageType,
@@ -86,7 +132,11 @@ export function CheckoutPage({ pricingTier }: CheckoutPageProps) {
 
       if (orderResult.ok) {
         saveCart([]);
-        router.refresh();
+        router.push(
+          `/checkout/thank-you?orderNumber=${encodeURIComponent(
+            orderResult.orderNumber,
+          )}&email=${encodeURIComponent(orderResult.email)}`,
+        );
       }
     });
   }
@@ -136,6 +186,7 @@ export function CheckoutPage({ pricingTier }: CheckoutPageProps) {
 
           <form
             onSubmit={handleSubmit}
+            autoComplete="on"
             className="mt-10 grid gap-5 rounded-4xl border border-black/10 bg-white p-6 shadow-xl shadow-orange-950/10"
           >
             <div className="grid gap-5 sm:grid-cols-2">
@@ -144,7 +195,7 @@ export function CheckoutPage({ pricingTier }: CheckoutPageProps) {
                 <input
                   name="name"
                   required
-                  autoComplete="name"
+                  autoComplete="shipping name"
                   className="rounded-2xl border border-black/10 bg-[#fffaf2] px-4 py-3 text-base font-normal outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
                 />
               </label>
@@ -154,7 +205,7 @@ export function CheckoutPage({ pricingTier }: CheckoutPageProps) {
                   name="phone"
                   type="tel"
                   required
-                  autoComplete="tel"
+                  autoComplete="shipping tel"
                   className="rounded-2xl border border-black/10 bg-[#fffaf2] px-4 py-3 text-base font-normal outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
                 />
               </label>
@@ -166,7 +217,7 @@ export function CheckoutPage({ pricingTier }: CheckoutPageProps) {
                 name="email"
                 type="email"
                 required
-                autoComplete="email"
+                autoComplete="shipping email"
                 className="rounded-2xl border border-black/10 bg-[#fffaf2] px-4 py-3 text-base font-normal outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
               />
             </label>
@@ -201,12 +252,18 @@ export function CheckoutPage({ pricingTier }: CheckoutPageProps) {
               </label>
               <label className="grid gap-2 text-sm font-semibold text-[#3b332d]">
                 State
-                <input
+                <select
                   name="state"
                   required
                   autoComplete="shipping address-level1"
                   className="rounded-2xl border border-black/10 bg-[#fffaf2] px-4 py-3 text-base font-normal outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
-                />
+                >
+                  {usStates.map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label className="grid gap-2 text-sm font-semibold text-[#3b332d]">
                 ZIP Code
@@ -249,31 +306,16 @@ export function CheckoutPage({ pricingTier }: CheckoutPageProps) {
               ))}
             </fieldset>
 
-            <fieldset className="grid gap-3 rounded-3xl border border-black/10 bg-[#fffaf2] p-5">
-              <legend className="px-2 text-sm font-bold uppercase tracking-[0.2em] text-[#a24b00]">
+            <div className="rounded-3xl border border-black/10 bg-[#fffaf2] p-5">
+              <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#a24b00]">
                 Manual Payment
-              </legend>
-              {Object.entries(paymentMethodLabels).map(([value, label]) => (
-                <label
-                  key={value}
-                  className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-[#3b332d]"
-                >
-                  <input
-                    name="paymentMethod"
-                    type="radio"
-                    value={value}
-                    defaultChecked={value === "venmo"}
-                    className="h-4 w-4 accent-[#ea7500]"
-                  />
-                  {label}
-                </label>
-              ))}
-              <p className="text-sm leading-6 text-[#62564c]">
-                Payment instructions are shown after checkout and included in
-                the order email. Orders remain pending until payment is marked
-                paid by the admin.
               </p>
-            </fieldset>
+              <p className="mt-3 text-sm leading-6 text-[#62564c]">
+                After checkout, you can pay with either Venmo or Zelle. Both
+                options are shown on the thank-you page and included in the
+                order email.
+              </p>
+            </div>
 
             <button
               type="submit"
@@ -282,20 +324,6 @@ export function CheckoutPage({ pricingTier }: CheckoutPageProps) {
             >
               {isPending ? "Creating Order..." : "Create Order"}
             </button>
-
-            {result?.ok ? (
-              <div className="rounded-2xl bg-[#e8f5df] p-4 text-sm font-semibold text-[#2f5f1e]">
-                <p>Order {result.orderNumber} was created.</p>
-                <Link
-                  href={`/orders/${result.orderNumber}?email=${encodeURIComponent(
-                    result.email,
-                  )}`}
-                  className="mt-2 inline-block underline"
-                >
-                  View order status
-                </Link>
-              </div>
-            ) : null}
 
             {result && !result.ok ? (
               <p className="rounded-2xl bg-[#fff1f1] p-4 text-sm font-semibold text-[#8a1f1f]">

@@ -8,6 +8,10 @@ import { orderItems, orders, productInventory, users } from "@/db/schema";
 import { products } from "@/app/products";
 import { formatCents } from "@/lib/money";
 import {
+  cancelOrder,
+  deleteOrder,
+  pullInventoryFromShipStation,
+  syncInventoryToShipStation,
   updateInventory,
   updateMemberPricing,
   updateOrderStatus,
@@ -55,6 +59,17 @@ export default async function Page({ searchParams }: PageProps) {
   ]);
   const inventoryByProduct = new Map(
     inventoryRows.map((row) => [row.productId, row.quantity]),
+  );
+  const inventorySyncByProduct = new Map(
+    inventoryRows.map((row) => [row.productId, row]),
+  );
+  const shipStationInventoryLocationId =
+    process.env.SHIP_STATION_INVENTORY_LOCATION_ID?.trim();
+  const shipStationInventoryConfigured = Boolean(
+    process.env.SHIP_STATION_API_KEY?.trim() &&
+      shipStationInventoryLocationId &&
+      shipStationInventoryLocationId.toLowerCase() !== "null" &&
+      shipStationInventoryLocationId.toLowerCase() !== "undefined",
   );
 
   return (
@@ -130,9 +145,20 @@ export default async function Page({ searchParams }: PageProps) {
                     >
                       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
                         <div>
-                          <p className="text-sm font-bold text-[#a24b00]">
-                            {order.orderNumber}
-                          </p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm font-bold text-[#a24b00]">
+                              {order.orderNumber}
+                            </p>
+                            <span
+                              className={
+                                order.orderStatus === "cancelled"
+                                  ? "rounded-full bg-[#fff1f1] px-3 py-1 text-xs font-bold text-[#8a1f1f]"
+                                  : "rounded-full bg-[#e8f5df] px-3 py-1 text-xs font-bold text-[#2f5f1e]"
+                              }
+                            >
+                              {order.orderStatus}
+                            </span>
+                          </div>
                           <h3 className="mt-2 text-2xl font-semibold">
                             {order.customerName}
                           </h3>
@@ -150,6 +176,53 @@ export default async function Page({ searchParams }: PageProps) {
                         {order.addressLine2 ? `, ${order.addressLine2}` : ""}
                         <br />
                         {order.city}, {order.state} {order.postalCode}
+                      </div>
+
+                      <div className="mt-4 rounded-2xl bg-white p-4 text-sm leading-6 text-[#62564c]">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-semibold text-[#171411]">
+                            ShipStation
+                          </span>
+                          <span
+                            className={
+                              order.shipStationSyncStatus === "synced"
+                                ? "rounded-full bg-[#e8f5df] px-3 py-1 text-xs font-bold text-[#2f5f1e]"
+                                : order.shipStationSyncStatus === "failed"
+                                  ? "rounded-full bg-[#fff1f1] px-3 py-1 text-xs font-bold text-[#8a1f1f]"
+                                  : "rounded-full bg-[#fff2e4] px-3 py-1 text-xs font-bold text-[#a24b00]"
+                            }
+                          >
+                            {order.shipStationSyncStatus}
+                          </span>
+                        </div>
+                        <p className="mt-2">
+                          External shipment:{" "}
+                          {order.shipStationExternalShipmentId ??
+                            order.orderNumber}
+                        </p>
+                        {order.shipStationShipmentId ? (
+                          <p>Shipment ID: {order.shipStationShipmentId}</p>
+                        ) : null}
+                        {order.shipStationAddressValidationStatus ? (
+                          <p>
+                            Address validation:{" "}
+                            {order.shipStationAddressValidationStatus}
+                          </p>
+                        ) : null}
+                        {order.shipStationAddressValidationMessage ? (
+                          <p>{order.shipStationAddressValidationMessage}</p>
+                        ) : null}
+                        {order.shipStationMatchedAddress ? (
+                          <p className="whitespace-pre-line">
+                            Matched address:{" "}
+                            {order.shipStationMatchedAddress}
+                          </p>
+                        ) : null}
+                        {order.shipStationSyncError ? (
+                          <p className="mt-2 font-semibold text-[#8a1f1f]">
+                            {order.shipStationSyncError}
+                          </p>
+                        ) : null}
                       </div>
 
                       <div className="mt-4 divide-y divide-black/10 rounded-2xl bg-white px-4">
@@ -222,6 +295,35 @@ export default async function Page({ searchParams }: PageProps) {
                           Update Order
                         </button>
                       </form>
+
+                      <div className="mt-4 grid gap-3 rounded-2xl border border-black/10 bg-white p-4 md:grid-cols-2">
+                        <form action={cancelOrder}>
+                          <input type="hidden" name="orderId" value={order.id} />
+                          <button
+                            type="submit"
+                            disabled={order.orderStatus === "cancelled"}
+                            className="w-full rounded-full bg-[#8a1f1f] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#6f1717] disabled:cursor-not-allowed disabled:bg-[#c5b8af]"
+                          >
+                            {order.orderStatus === "cancelled"
+                              ? "Order Cancelled"
+                              : "Cancel and Return Inventory"}
+                          </button>
+                        </form>
+                        <form action={deleteOrder}>
+                          <input type="hidden" name="orderId" value={order.id} />
+                          <button
+                            type="submit"
+                            className="w-full rounded-full border border-[#8a1f1f]/30 bg-white px-5 py-3 text-sm font-bold text-[#8a1f1f] transition hover:bg-[#fff1f1]"
+                          >
+                            Delete Order
+                          </button>
+                        </form>
+                        <p className="text-xs leading-5 text-[#62564c] md:col-span-2">
+                          Cancel keeps the order record and returns inventory
+                          once. Delete removes the order and returns inventory
+                          first only if it has not already been returned.
+                        </p>
+                      </div>
                     </article>
                   );
                 })
@@ -241,16 +343,49 @@ export default async function Page({ searchParams }: PageProps) {
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-[#62564c]">
                   Stock shown here appears on the storefront and is decremented
-                  when checkout creates an order.
+                  when checkout creates an order. ShipStation sync uses
+                  SHIP_STATION_INVENTORY_LOCATION_ID when set, otherwise it
+                  tries the first ShipStation inventory location.
+                </p>
+                <p
+                  className={
+                    shipStationInventoryConfigured
+                      ? "mt-2 text-sm font-semibold text-[#2f5f1e]"
+                      : "mt-2 text-sm font-semibold text-[#8a1f1f]"
+                  }
+                >
+                  ShipStation inventory sync is{" "}
+                  {shipStationInventoryConfigured ? "configured" : "not configured"}.
                 </p>
               </div>
-              <p className="rounded-full bg-[#fff2e4] px-4 py-2 text-sm font-bold text-[#a24b00]">
-                {products.length} variants
-              </p>
+              <div className="flex flex-col gap-2 sm:items-end">
+                <p className="rounded-full bg-[#fff2e4] px-4 py-2 text-sm font-bold text-[#a24b00]">
+                  {products.length} variants
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <form action={syncInventoryToShipStation}>
+                    <button
+                      type="submit"
+                      className="rounded-full bg-[#171411] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#302821]"
+                    >
+                      Push to ShipStation
+                    </button>
+                  </form>
+                  <form action={pullInventoryFromShipStation}>
+                    <button
+                      type="submit"
+                      className="rounded-full border border-black/10 bg-white px-4 py-2 text-xs font-bold text-[#171411] transition hover:border-[#ea7500]/40 hover:bg-[#fff8ef]"
+                    >
+                      Pull from ShipStation
+                    </button>
+                  </form>
+                </div>
+              </div>
             </div>
             <div className="mt-6 grid gap-4">
               {products.map((product) => {
                 const quantity = inventoryByProduct.get(product.id) ?? 0;
+                const sync = inventorySyncByProduct.get(product.id);
 
                 return (
                   <form
@@ -271,10 +406,33 @@ export default async function Page({ searchParams }: PageProps) {
                         >
                           {quantity > 0 ? `${quantity} in stock` : "Out of stock"}
                         </span>
+                        <span
+                          className={
+                            sync?.shipStationInventorySyncStatus === "synced"
+                              ? "rounded-full bg-[#e8f5df] px-3 py-1 text-xs font-bold text-[#2f5f1e]"
+                              : sync?.shipStationInventorySyncStatus === "failed"
+                                ? "rounded-full bg-[#fff1f1] px-3 py-1 text-xs font-bold text-[#8a1f1f]"
+                                : "rounded-full bg-white px-3 py-1 text-xs font-bold text-[#62564c]"
+                          }
+                        >
+                          ShipStation{" "}
+                          {sync?.shipStationInventorySyncStatus ?? "pending"}
+                        </span>
                       </div>
                       <p className="mt-1 text-sm text-[#62564c]">
                         {product.amount} · {product.id}
                       </p>
+                      {sync?.shipStationInventorySyncedAt ? (
+                        <p className="mt-1 text-xs text-[#62564c]">
+                          Last synced{" "}
+                          {sync.shipStationInventorySyncedAt.toLocaleString()}
+                        </p>
+                      ) : null}
+                      {sync?.shipStationInventorySyncError ? (
+                        <p className="mt-1 text-xs font-semibold text-[#8a1f1f]">
+                          {sync.shipStationInventorySyncError}
+                        </p>
+                      ) : null}
                     </div>
                     <input
                       name="quantity"

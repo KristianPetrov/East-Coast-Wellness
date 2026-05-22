@@ -7,7 +7,6 @@ import {
   orderItems,
   orders,
   productInventory,
-  type PaymentMethod,
 } from "@/db/schema";
 import { getAuthSession } from "@/auth";
 import { getCurrentPricingTier } from "@/lib/member-pricing";
@@ -19,8 +18,10 @@ import {
   type ShippingMethod,
 } from "@/lib/orders";
 import { sendOrderCreatedEmail } from "@/lib/email";
-
-const paymentMethods = new Set<PaymentMethod>(["venmo", "zelle"]);
+import {
+  syncInventoryLevelsToShipStation,
+  syncOrderToShipStation,
+} from "@/lib/shipstation";
 
 class StockError extends Error {}
 
@@ -34,7 +35,6 @@ type CheckoutInput = {
   state: string;
   zip: string;
   shippingMethod: ShippingMethod;
-  paymentMethod: PaymentMethod;
   items: CheckoutCartItem[];
 };
 
@@ -51,10 +51,6 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
 
     if (builtItems.length === 0) {
       return { ok: false, message: "Add at least one product before checkout." };
-    }
-
-    if (!paymentMethods.has(input.paymentMethod)) {
-      return { ok: false, message: "Select a supported payment method." };
     }
 
     const shippingOption = shippingOptions[input.shippingMethod];
@@ -129,7 +125,7 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
           city: input.city.trim(),
           state: input.state.trim(),
           postalCode: input.zip.trim(),
-          paymentMethod: input.paymentMethod,
+          paymentMethod: "venmo",
           totalCents,
         })
         .returning();
@@ -165,6 +161,68 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
 
     if (!result.ok) {
       return result;
+    }
+
+    try {
+      const shipStationResult = await syncOrderToShipStation(
+        result.order,
+        result.insertedItems,
+      );
+
+      await db
+        .update(orders)
+        .set({
+          shipStationShipmentId: shipStationResult.shipmentId,
+          shipStationExternalShipmentId:
+            shipStationResult.externalShipmentId,
+          shipStationSyncStatus: shipStationResult.status,
+          shipStationSyncError: shipStationResult.error,
+          shipStationAddressValidationStatus:
+            shipStationResult.addressValidation.status,
+          shipStationAddressValidationMessage:
+            shipStationResult.addressValidation.message,
+          shipStationMatchedAddress:
+            shipStationResult.addressValidation.matchedAddress,
+          updatedAt: new Date(),
+        })
+        .where(eq(orders.id, result.order.id));
+
+      if (shipStationResult.status !== "synced") {
+        console.error("Failed to sync order to ShipStation", {
+          orderNumber: result.order.orderNumber,
+          error: shipStationResult.error,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to record ShipStation sync status", error);
+    }
+
+    try {
+      const inventoryRows = await db
+        .select()
+        .from(productInventory)
+        .where(
+          inArray(
+            productInventory.productId,
+            builtItems.map((item) => item.productId),
+          ),
+        );
+      const inventorySyncResults =
+        await syncInventoryLevelsToShipStation(inventoryRows);
+
+      for (const syncResult of inventorySyncResults) {
+        await db
+          .update(productInventory)
+          .set({
+            shipStationInventorySyncStatus: syncResult.status,
+            shipStationInventorySyncError: syncResult.error,
+            shipStationInventorySyncedAt: syncResult.syncedAt,
+            updatedAt: new Date(),
+          })
+          .where(eq(productInventory.productId, syncResult.productId));
+      }
+    } catch (error) {
+      console.error("Failed to sync checkout inventory to ShipStation", error);
     }
 
     await sendOrderCreatedEmail(result.order, result.insertedItems);
