@@ -15,6 +15,10 @@ type PageProps = {
 export const metadata: Metadata = {
   title: "Thank You | East Coast Wellness",
   description: "East Coast Wellness order confirmation and payment details.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default async function Page({ searchParams }: PageProps) {

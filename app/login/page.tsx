@@ -6,6 +6,10 @@ import { LoginForm } from "./LoginForm";
 export const metadata: Metadata = {
   title: "Login | East Coast Wellness",
   description: "Sign in to view East Coast Wellness orders.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function Page() {

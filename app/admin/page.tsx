@@ -20,6 +20,10 @@ import {
 export const metadata: Metadata = {
   title: "Admin Dashboard | East Coast Wellness",
   description: "Manage East Coast Wellness orders and inventory.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 type PageProps = {

@@ -5,6 +5,10 @@ import { RegisterForm } from "./RegisterForm";
 export const metadata: Metadata = {
   title: "Register | East Coast Wellness",
   description: "Create an East Coast Wellness account.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function Page() {

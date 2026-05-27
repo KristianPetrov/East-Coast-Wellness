@@ -1,11 +1,30 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { getInventoryByProductId } from "@/lib/inventory";
 import { getCurrentPricingTier } from "@/lib/member-pricing";
+import { absoluteUrl, siteConfig } from "@/lib/seo";
 import { FeaturedProductsSlideshow } from "./FeaturedProductsSlideshow";
 import { Logo } from "./Logo";
 import { MobileNav } from "./MobileNav";
 import { featuredProductGroups } from "./products";
+
+export const metadata: Metadata = {
+  title: "Research-Use Molecule Store",
+  description: siteConfig.description,
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    url: "/",
+    title: `${siteConfig.name} | Research-Use Molecule Store`,
+    description: siteConfig.description,
+  },
+  twitter: {
+    title: `${siteConfig.name} | Research-Use Molecule Store`,
+    description: siteConfig.description,
+  },
+};
 
 const standards = [
   "Research-use-only labeling",
@@ -19,9 +38,30 @@ export default async function Home() {
     getInventoryByProductId(),
     getCurrentPricingTier(),
   ]);
+  const structuredData = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: siteConfig.name,
+      url: absoluteUrl("/"),
+      logo: absoluteUrl(siteConfig.logo),
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: siteConfig.name,
+      url: absoluteUrl("/"),
+    },
+  ];
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#f7f2ea] text-[#171411]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(structuredData).replace(/</g, "\\u003c"),
+        }}
+      />
       <section className="relative border-b border-black/10 bg-[radial-gradient(circle_at_top_right,rgba(234,117,0,0.18),transparent_32%),linear-gradient(135deg,#fffaf2_0%,#efe4d6_100%)]">
         <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 lg:px-8">
           <Logo priority />

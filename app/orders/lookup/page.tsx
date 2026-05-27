@@ -5,6 +5,10 @@ import { LookupForm } from "./LookupForm";
 export const metadata: Metadata = {
   title: "Order Lookup | East Coast Wellness",
   description: "Look up an East Coast Wellness order by order number and email.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function Page() {

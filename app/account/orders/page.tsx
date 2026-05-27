@@ -9,6 +9,10 @@ import { SignOutButton } from "../SignOutButton";
 export const metadata: Metadata = {
   title: "My Orders | East Coast Wellness",
   description: "View your East Coast Wellness order history.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default async function Page() {

@@ -294,7 +294,6 @@ function buildShipStationShipment(order: Order, items: OrderItem[]) {
     },
     ship_to: {
       name: order.customerName,
-      phone: order.customerPhone,
       email: order.customerEmail,
       company_name: null,
       address_line1: order.addressLine1,
