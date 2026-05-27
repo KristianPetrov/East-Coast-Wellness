@@ -17,7 +17,7 @@ const resend = process.env.RESEND_API_KEY
 function getFromAddress() {
   return (
     process.env.ORDER_EMAIL_FROM ??
-    "East Coast Wellness <onboarding@resend.dev>"
+    "East Coast Wellness <orders@eastcoastwellness.co>"
   );
 }
 
@@ -101,7 +101,7 @@ function orderCreatedHtml(order: Order, items: OrderItem[]) {
       <h1 style="margin:0 0 12px;font-size:30px;line-height:1.1;">Order ${escapeHtml(
         order.orderNumber,
       )} received</h1>
-      <p style="margin:0 0 20px;color:#62564c;">Thank you for your order request. Payment is pending until confirmed by East Coast Wellness.</p>
+      <p style="margin:0 0 20px;color:#62564c;">Thank you for your order request. Payment is pending until confirmed by East Coast Wellness.</p>                                                                                                                                                 
       <div style="margin:20px 0;padding:18px;border-radius:20px;background:#fff8ef;">
         <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#a24b00;text-transform:uppercase;letter-spacing:0.12em;">Payment</p>
         <p style="margin:0;"><strong>${paymentDetails.label}</strong></p>
