@@ -118,6 +118,7 @@ export function CheckoutPage({ pricingTier }: CheckoutPageProps) {
         city: String(formData.get("city") ?? ""),
         state: String(formData.get("state") ?? ""),
         zip: String(formData.get("zip") ?? ""),
+        referralCode: String(formData.get("referralCode") ?? ""),
         shippingMethod: String(
           formData.get("shippingMethod") ?? "standard",
         ) as ShippingMethod,
@@ -305,6 +306,20 @@ export function CheckoutPage({ pricingTier }: CheckoutPageProps) {
                 </label>
               ))}
             </fieldset>
+
+            <label className="grid gap-2 text-sm font-semibold text-[#3b332d]">
+              Referral Code
+              <input
+                name="referralCode"
+                autoComplete="off"
+                placeholder="Optional"
+                className="rounded-2xl border border-black/10 bg-[#fffaf2] px-4 py-3 text-base font-normal uppercase outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
+              />
+              <span className="text-xs font-normal leading-5 text-[#62564c]">
+                Active referral discounts are applied to product subtotal when
+                the order is created.
+              </span>
+            </label>
 
             <div className="rounded-3xl border border-black/10 bg-[#fffaf2] p-5">
               <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#a24b00]">

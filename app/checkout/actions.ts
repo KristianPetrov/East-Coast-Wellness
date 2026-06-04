@@ -11,6 +11,10 @@ import {
 import { getAuthSession } from "@/auth";
 import { getCurrentPricingTier } from "@/lib/member-pricing";
 import {
+  calculateReferralDiscountCents,
+  getActiveReferralCode,
+} from "@/lib/referrals";
+import {
   buildOrderItems,
   createOrderNumber,
   shippingOptions,
@@ -35,6 +39,7 @@ type CheckoutInput = {
   state: string;
   zip: string;
   shippingMethod: ShippingMethod;
+  referralCode?: string;
   items: CheckoutCartItem[];
 };
 
@@ -60,10 +65,26 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
     }
 
     const shippingPriceCents: number = shippingOption.priceCents;
-    const totalCents = builtItems.reduce<number>(
+    const subtotalCents = builtItems.reduce<number>(
       (total, item) => total + item.priceCents * item.quantity,
-      shippingPriceCents,
+      0,
     );
+    const referralCode = input.referralCode
+      ? await getActiveReferralCode(input.referralCode)
+      : null;
+    const referralCodeInput = input.referralCode?.trim();
+
+    if (referralCodeInput && !referralCode) {
+      return { ok: false, message: "That referral code is not active." };
+    }
+
+    const referralDiscountCents = referralCode
+      ? calculateReferralDiscountCents(
+          subtotalCents,
+          referralCode.discountPercent,
+        )
+      : 0;
+    const totalCents = subtotalCents - referralDiscountCents + shippingPriceCents;
 
     const result = await db.transaction(async (tx) => {
       const inventoryRows = await tx
@@ -117,6 +138,10 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
         .values({
           orderNumber: createOrderNumber(),
           userId: session?.user?.id,
+          referralPartnerId: referralCode?.partnerId,
+          referralCodeId: referralCode?.id,
+          referralCode: referralCode?.code,
+          referralDiscountCents,
           customerName: input.name.trim(),
           customerEmail: email,
           customerPhone: input.phone.trim(),
@@ -149,6 +174,19 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
           priceCents: shippingPriceCents,
           quantity: 1,
         },
+        ...(referralCode && referralDiscountCents > 0
+          ? [
+              {
+                orderId: order.id,
+                productId: `discount:${referralCode.code}`,
+                name: `Referral discount ${referralCode.code}`,
+                amount: `${referralCode.discountPercent}% off products`,
+                category: "Discount",
+                priceCents: -referralDiscountCents,
+                quantity: 1,
+              },
+            ]
+          : []),
       ];
 
       const insertedItems = await tx

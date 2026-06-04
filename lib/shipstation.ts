@@ -69,7 +69,11 @@ function getShippingItem(items: OrderItem[]) {
 }
 
 function getProductItems(items: OrderItem[]) {
-  return items.filter((item) => !item.productId.startsWith("shipping:"));
+  return items.filter(
+    (item) =>
+      !item.productId.startsWith("shipping:") &&
+      !item.productId.startsWith("discount:"),
+  );
 }
 
 function getErrorMessage(error: unknown) {

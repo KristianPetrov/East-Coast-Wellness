@@ -5,6 +5,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -56,10 +57,53 @@ export const productInventory = pgTable("product_inventory", {
     .defaultNow(),
 });
 
+export const referralPartners = pgTable("referral_partners", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  email: text("email"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const referralCodes = pgTable(
+  "referral_codes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    partnerId: uuid("partner_id")
+      .notNull()
+      .references(() => referralPartners.id, { onDelete: "cascade" }),
+    code: text("code").notNull(),
+    discountPercent: integer("discount_percent").notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [uniqueIndex("referral_codes_code_idx").on(table.code)],
+);
+
 export const orders = pgTable("orders", {
   id: uuid("id").defaultRandom().primaryKey(),
   orderNumber: text("order_number").notNull().unique(),
   userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+  referralPartnerId: uuid("referral_partner_id").references(
+    () => referralPartners.id,
+    { onDelete: "set null" },
+  ),
+  referralCodeId: uuid("referral_code_id").references(() => referralCodes.id, {
+    onDelete: "set null",
+  }),
+  referralCode: text("referral_code"),
+  referralDiscountCents: integer("referral_discount_cents")
+    .notNull()
+    .default(0),
   customerName: text("customer_name").notNull(),
   customerEmail: text("customer_email").notNull(),
   customerPhone: text("customer_phone").notNull(),

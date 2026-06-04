@@ -7,6 +7,8 @@ import {
   orderItems,
   orders,
   productInventory,
+  referralCodes,
+  referralPartners,
   users,
   type Carrier,
   type PaymentStatus,
@@ -20,6 +22,7 @@ import {
   syncInventoryLevelToShipStation,
   syncInventoryLevelsToShipStation,
 } from "@/lib/shipstation";
+import { normalizeReferralCode } from "@/lib/referrals";
 
 type OrderItem = typeof orderItems.$inferSelect;
 
@@ -32,7 +35,10 @@ async function requireAdmin() {
 }
 
 function getRestockQuantity(item: OrderItem) {
-  if (item.productId.startsWith("shipping:")) {
+  if (
+    item.productId.startsWith("shipping:") ||
+    item.productId.startsWith("discount:")
+  ) {
     return 0;
   }
 
@@ -233,6 +239,95 @@ export async function updateMemberPricing(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/");
   revalidatePath("/store");
+}
+
+function readDiscountPercent(formData: FormData) {
+  const discountPercent = Number(formData.get("discountPercent") ?? 0);
+
+  if (
+    !Number.isInteger(discountPercent) ||
+    discountPercent < 1 ||
+    discountPercent > 100
+  ) {
+    throw new Error("Referral discount must be a whole percentage from 1 to 100.");
+  }
+
+  return discountPercent;
+}
+
+export async function createReferralPartner(formData: FormData) {
+  await requireAdmin();
+
+  const name = String(formData.get("name") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const code = normalizeReferralCode(String(formData.get("code") ?? ""));
+  const discountPercent = readDiscountPercent(formData);
+
+  if (!name) {
+    throw new Error("Referral partner name is required.");
+  }
+
+  if (!code) {
+    throw new Error("Referral code is required.");
+  }
+
+  await db.transaction(async (tx) => {
+    const [partner] = await tx
+      .insert(referralPartners)
+      .values({ name, email: email || null })
+      .returning();
+
+    await tx.insert(referralCodes).values({
+      partnerId: partner.id,
+      code,
+      discountPercent,
+    });
+  });
+
+  revalidatePath("/admin");
+}
+
+export async function createReferralCode(formData: FormData) {
+  await requireAdmin();
+
+  const partnerId = String(formData.get("partnerId") ?? "");
+  const code = normalizeReferralCode(String(formData.get("code") ?? ""));
+  const discountPercent = readDiscountPercent(formData);
+
+  if (!partnerId) {
+    throw new Error("Referral partner is required.");
+  }
+
+  if (!code) {
+    throw new Error("Referral code is required.");
+  }
+
+  await db.insert(referralCodes).values({
+    partnerId,
+    code,
+    discountPercent,
+  });
+
+  revalidatePath("/admin");
+}
+
+export async function updateReferralCode(formData: FormData) {
+  await requireAdmin();
+
+  const codeId = String(formData.get("codeId") ?? "");
+  const discountPercent = readDiscountPercent(formData);
+  const isActive = formData.get("isActive") === "on";
+
+  if (!codeId) {
+    throw new Error("Referral code is required.");
+  }
+
+  await db
+    .update(referralCodes)
+    .set({ discountPercent, isActive, updatedAt: new Date() })
+    .where(eq(referralCodes.id, codeId));
+
+  revalidatePath("/admin");
 }
 
 export async function updateOrderStatus(formData: FormData) {
