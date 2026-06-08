@@ -7,10 +7,15 @@ export type AppliedReferralCode = {
   partnerId: string;
   code: string;
   discountPercent: number;
+  excludeReconstitution: boolean;
 };
 
 export function normalizeReferralCode(code: string) {
   return code.trim().toUpperCase().replace(/\s+/g, "");
+}
+
+export function isReconstitutionProduct(productId: string) {
+  return productId.startsWith("reconstitution-");
 }
 
 export function calculateReferralDiscountCents(

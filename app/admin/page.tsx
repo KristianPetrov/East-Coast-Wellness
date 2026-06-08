@@ -628,7 +628,7 @@ export default async function Page({ searchParams }: PageProps) {
 
             <form
               action={createReferralPartner}
-              className="mt-6 grid gap-4 rounded-3xl border border-black/10 bg-[#fffaf2] p-4 lg:grid-cols-[1fr_1fr_10rem_8rem_auto] lg:items-end"
+              className="mt-6 grid gap-4 rounded-3xl border border-black/10 bg-[#fffaf2] p-4 lg:grid-cols-[1fr_1fr_10rem_8rem_auto_auto] lg:items-end"
             >
               <label className="grid gap-2 text-sm font-semibold">
                 Partner Name
@@ -664,6 +664,14 @@ export default async function Page({ searchParams }: PageProps) {
                   required
                   className="rounded-2xl border border-black/10 bg-white px-4 py-3 font-normal outline-none focus:border-[#ea7500]"
                 />
+              </label>
+              <label className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 text-sm font-semibold">
+                <input
+                  name="excludeReconstitution"
+                  type="checkbox"
+                  className="h-4 w-4 accent-[#ea7500]"
+                />
+                Exclude Reconstitution Solution
               </label>
               <button
                 type="submit"
@@ -731,7 +739,7 @@ export default async function Page({ searchParams }: PageProps) {
                             <form
                               key={code.id}
                               action={updateReferralCode}
-                              className="grid gap-3 rounded-2xl bg-white p-4 md:grid-cols-[1fr_8rem_auto_auto] md:items-center"
+                              className="grid gap-3 rounded-2xl bg-white p-4 md:grid-cols-[1fr_8rem_auto_auto_auto] md:items-center"
                             >
                               <input
                                 type="hidden"
@@ -750,6 +758,11 @@ export default async function Page({ searchParams }: PageProps) {
                                   >
                                     {code.isActive ? "Active" : "Inactive"}
                                   </span>
+                                  {code.excludeReconstitution ? (
+                                    <span className="rounded-full bg-[#fff4e3] px-3 py-1 text-xs font-bold text-[#a24b00]">
+                                      Excludes Reconstitution
+                                    </span>
+                                  ) : null}
                                 </div>
                                 <p className="mt-1 text-sm text-[#62564c]">
                                   {codeTotals?.orders ?? 0} orders ·{" "}
@@ -779,6 +792,15 @@ export default async function Page({ searchParams }: PageProps) {
                                 />
                                 Active
                               </label>
+                              <label className="flex items-center gap-3 rounded-2xl bg-[#fffaf2] px-4 py-3 text-sm font-semibold">
+                                <input
+                                  name="excludeReconstitution"
+                                  type="checkbox"
+                                  defaultChecked={code.excludeReconstitution}
+                                  className="h-4 w-4 accent-[#ea7500]"
+                                />
+                                Exclude Reconstitution
+                              </label>
                               <button
                                 type="submit"
                                 className="rounded-full bg-[#171411] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#302821]"
@@ -792,7 +814,7 @@ export default async function Page({ searchParams }: PageProps) {
 
                       <form
                         action={createReferralCode}
-                        className="mt-4 grid gap-3 rounded-2xl border border-black/10 bg-white p-4 md:grid-cols-[1fr_8rem_auto] md:items-end"
+                        className="mt-4 grid gap-3 rounded-2xl border border-black/10 bg-white p-4 md:grid-cols-[1fr_8rem_auto_auto] md:items-end"
                       >
                         <input
                           type="hidden"
@@ -817,6 +839,14 @@ export default async function Page({ searchParams }: PageProps) {
                             required
                             className="rounded-2xl border border-black/10 bg-[#fffaf2] px-4 py-3 font-normal outline-none focus:border-[#ea7500]"
                           />
+                        </label>
+                        <label className="flex items-center gap-3 rounded-2xl border border-black/10 bg-[#fffaf2] px-4 py-3 text-sm font-semibold">
+                          <input
+                            name="excludeReconstitution"
+                            type="checkbox"
+                            className="h-4 w-4 accent-[#ea7500]"
+                          />
+                          Exclude Reconstitution
                         </label>
                         <button
                           type="submit"

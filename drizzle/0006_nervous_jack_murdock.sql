@@ -1,0 +1,1 @@
+ALTER TABLE "referral_codes" ADD COLUMN "exclude_reconstitution" boolean DEFAULT false NOT NULL;

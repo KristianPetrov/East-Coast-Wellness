@@ -13,6 +13,7 @@ import { getCurrentPricingTier } from "@/lib/member-pricing";
 import {
   calculateReferralDiscountCents,
   getActiveReferralCode,
+  isReconstitutionProduct,
 } from "@/lib/referrals";
 import {
   buildOrderItems,
@@ -78,9 +79,19 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
       return { ok: false, message: "That referral code is not active." };
     }
 
+    const discountEligibleSubtotalCents =
+      referralCode?.excludeReconstitution
+        ? builtItems.reduce<number>(
+            (total, item) =>
+              isReconstitutionProduct(item.productId)
+                ? total
+                : total + item.priceCents * item.quantity,
+            0,
+          )
+        : subtotalCents;
     const referralDiscountCents = referralCode
       ? calculateReferralDiscountCents(
-          subtotalCents,
+          discountEligibleSubtotalCents,
           referralCode.discountPercent,
         )
       : 0;
@@ -180,7 +191,11 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
                 orderId: order.id,
                 productId: `discount:${referralCode.code}`,
                 name: `Referral discount ${referralCode.code}`,
-                amount: `${referralCode.discountPercent}% off products`,
+                amount: `${referralCode.discountPercent}% off products${
+                  referralCode.excludeReconstitution
+                    ? " (excludes Reconstitution Solution)"
+                    : ""
+                }`,
                 category: "Discount",
                 priceCents: -referralDiscountCents,
                 quantity: 1,

@@ -262,6 +262,8 @@ export async function createReferralPartner(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const code = normalizeReferralCode(String(formData.get("code") ?? ""));
   const discountPercent = readDiscountPercent(formData);
+  const excludeReconstitution =
+    formData.get("excludeReconstitution") === "on";
 
   if (!name) {
     throw new Error("Referral partner name is required.");
@@ -281,6 +283,7 @@ export async function createReferralPartner(formData: FormData) {
       partnerId: partner.id,
       code,
       discountPercent,
+      excludeReconstitution,
     });
   });
 
@@ -293,6 +296,8 @@ export async function createReferralCode(formData: FormData) {
   const partnerId = String(formData.get("partnerId") ?? "");
   const code = normalizeReferralCode(String(formData.get("code") ?? ""));
   const discountPercent = readDiscountPercent(formData);
+  const excludeReconstitution =
+    formData.get("excludeReconstitution") === "on";
 
   if (!partnerId) {
     throw new Error("Referral partner is required.");
@@ -306,6 +311,7 @@ export async function createReferralCode(formData: FormData) {
     partnerId,
     code,
     discountPercent,
+    excludeReconstitution,
   });
 
   revalidatePath("/admin");
@@ -317,6 +323,8 @@ export async function updateReferralCode(formData: FormData) {
   const codeId = String(formData.get("codeId") ?? "");
   const discountPercent = readDiscountPercent(formData);
   const isActive = formData.get("isActive") === "on";
+  const excludeReconstitution =
+    formData.get("excludeReconstitution") === "on";
 
   if (!codeId) {
     throw new Error("Referral code is required.");
@@ -324,7 +332,12 @@ export async function updateReferralCode(formData: FormData) {
 
   await db
     .update(referralCodes)
-    .set({ discountPercent, isActive, updatedAt: new Date() })
+    .set({
+      discountPercent,
+      isActive,
+      excludeReconstitution,
+      updatedAt: new Date(),
+    })
     .where(eq(referralCodes.id, codeId));
 
   revalidatePath("/admin");

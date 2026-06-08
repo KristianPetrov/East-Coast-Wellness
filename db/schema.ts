@@ -79,6 +79,9 @@ export const referralCodes = pgTable(
     code: text("code").notNull(),
     discountPercent: integer("discount_percent").notNull(),
     isActive: boolean("is_active").notNull().default(true),
+    excludeReconstitution: boolean("exclude_reconstitution")
+      .notNull()
+      .default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
