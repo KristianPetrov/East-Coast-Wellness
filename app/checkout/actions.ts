@@ -24,6 +24,7 @@ import {
 } from "@/lib/orders";
 import { sendOrderCreatedEmail } from "@/lib/email";
 import {
+  isShipStationEnabled,
   syncInventoryLevelsToShipStation,
   syncOrderToShipStation,
 } from "@/lib/shipstation";
@@ -162,6 +163,7 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
           state: input.state.trim(),
           postalCode: input.zip.trim(),
           paymentMethod: "venmo",
+          shipStationSyncStatus: isShipStationEnabled() ? "pending" : "skipped",
           totalCents,
         })
         .returning();
@@ -216,66 +218,68 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
       return result;
     }
 
-    try {
-      const shipStationResult = await syncOrderToShipStation(
-        result.order,
-        result.insertedItems,
-      );
-
-      await db
-        .update(orders)
-        .set({
-          shipStationShipmentId: shipStationResult.shipmentId,
-          shipStationExternalShipmentId:
-            shipStationResult.externalShipmentId,
-          shipStationSyncStatus: shipStationResult.status,
-          shipStationSyncError: shipStationResult.error,
-          shipStationAddressValidationStatus:
-            shipStationResult.addressValidation.status,
-          shipStationAddressValidationMessage:
-            shipStationResult.addressValidation.message,
-          shipStationMatchedAddress:
-            shipStationResult.addressValidation.matchedAddress,
-          updatedAt: new Date(),
-        })
-        .where(eq(orders.id, result.order.id));
-
-      if (shipStationResult.status !== "synced") {
-        console.error("Failed to sync order to ShipStation", {
-          orderNumber: result.order.orderNumber,
-          error: shipStationResult.error,
-        });
-      }
-    } catch (error) {
-      console.error("Failed to record ShipStation sync status", error);
-    }
-
-    try {
-      const inventoryRows = await db
-        .select()
-        .from(productInventory)
-        .where(
-          inArray(
-            productInventory.productId,
-            builtItems.map((item) => item.productId),
-          ),
+    if (isShipStationEnabled()) {
+      try {
+        const shipStationResult = await syncOrderToShipStation(
+          result.order,
+          result.insertedItems,
         );
-      const inventorySyncResults =
-        await syncInventoryLevelsToShipStation(inventoryRows);
 
-      for (const syncResult of inventorySyncResults) {
         await db
-          .update(productInventory)
+          .update(orders)
           .set({
-            shipStationInventorySyncStatus: syncResult.status,
-            shipStationInventorySyncError: syncResult.error,
-            shipStationInventorySyncedAt: syncResult.syncedAt,
+            shipStationShipmentId: shipStationResult.shipmentId,
+            shipStationExternalShipmentId:
+              shipStationResult.externalShipmentId,
+            shipStationSyncStatus: shipStationResult.status,
+            shipStationSyncError: shipStationResult.error,
+            shipStationAddressValidationStatus:
+              shipStationResult.addressValidation.status,
+            shipStationAddressValidationMessage:
+              shipStationResult.addressValidation.message,
+            shipStationMatchedAddress:
+              shipStationResult.addressValidation.matchedAddress,
             updatedAt: new Date(),
           })
-          .where(eq(productInventory.productId, syncResult.productId));
+          .where(eq(orders.id, result.order.id));
+
+        if (shipStationResult.status !== "synced") {
+          console.error("Failed to sync order to ShipStation", {
+            orderNumber: result.order.orderNumber,
+            error: shipStationResult.error,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to record ShipStation sync status", error);
       }
-    } catch (error) {
-      console.error("Failed to sync checkout inventory to ShipStation", error);
+
+      try {
+        const inventoryRows = await db
+          .select()
+          .from(productInventory)
+          .where(
+            inArray(
+              productInventory.productId,
+              builtItems.map((item) => item.productId),
+            ),
+          );
+        const inventorySyncResults =
+          await syncInventoryLevelsToShipStation(inventoryRows);
+
+        for (const syncResult of inventorySyncResults) {
+          await db
+            .update(productInventory)
+            .set({
+              shipStationInventorySyncStatus: syncResult.status,
+              shipStationInventorySyncError: syncResult.error,
+              shipStationInventorySyncedAt: syncResult.syncedAt,
+              updatedAt: new Date(),
+            })
+            .where(eq(productInventory.productId, syncResult.productId));
+        }
+      } catch (error) {
+        console.error("Failed to sync checkout inventory to ShipStation", error);
+      }
     }
 
     await sendOrderCreatedEmail(result.order, result.insertedItems);

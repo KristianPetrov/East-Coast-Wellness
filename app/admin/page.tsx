@@ -14,6 +14,7 @@ import {
 } from "@/db/schema";
 import { products } from "@/app/products";
 import { formatCents } from "@/lib/money";
+import { isShipStationEnabled } from "@/lib/shipstation";
 import {
   cancelOrder,
   createReferralCode,
@@ -88,10 +89,12 @@ export default async function Page({ searchParams }: PageProps) {
   const inventorySyncByProduct = new Map(
     inventoryRows.map((row) => [row.productId, row]),
   );
+  const shipStationEnabled = isShipStationEnabled();
   const shipStationInventoryLocationId =
     process.env.SHIP_STATION_INVENTORY_LOCATION_ID?.trim();
   const shipStationInventoryConfigured = Boolean(
-    process.env.SHIP_STATION_API_KEY?.trim() &&
+    shipStationEnabled &&
+      process.env.SHIP_STATION_API_KEY?.trim() &&
       shipStationInventoryLocationId &&
       shipStationInventoryLocationId.toLowerCase() !== "null" &&
       shipStationInventoryLocationId.toLowerCase() !== "undefined",
@@ -272,52 +275,54 @@ export default async function Page({ searchParams }: PageProps) {
                         {order.city}, {order.state} {order.postalCode}
                       </div>
 
-                      <div className="mt-4 rounded-2xl bg-white p-4 text-sm leading-6 text-[#62564c]">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-semibold text-[#171411]">
-                            ShipStation
-                          </span>
-                          <span
-                            className={
-                              order.shipStationSyncStatus === "synced"
-                                ? "rounded-full bg-[#e8f5df] px-3 py-1 text-xs font-bold text-[#2f5f1e]"
-                                : order.shipStationSyncStatus === "failed"
-                                  ? "rounded-full bg-[#fff1f1] px-3 py-1 text-xs font-bold text-[#8a1f1f]"
-                                  : "rounded-full bg-[#fff2e4] px-3 py-1 text-xs font-bold text-[#a24b00]"
-                            }
-                          >
-                            {order.shipStationSyncStatus}
-                          </span>
+                      {shipStationEnabled ? (
+                        <div className="mt-4 rounded-2xl bg-white p-4 text-sm leading-6 text-[#62564c]">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-semibold text-[#171411]">
+                              ShipStation
+                            </span>
+                            <span
+                              className={
+                                order.shipStationSyncStatus === "synced"
+                                  ? "rounded-full bg-[#e8f5df] px-3 py-1 text-xs font-bold text-[#2f5f1e]"
+                                  : order.shipStationSyncStatus === "failed"
+                                    ? "rounded-full bg-[#fff1f1] px-3 py-1 text-xs font-bold text-[#8a1f1f]"
+                                    : "rounded-full bg-[#fff2e4] px-3 py-1 text-xs font-bold text-[#a24b00]"
+                              }
+                            >
+                              {order.shipStationSyncStatus}
+                            </span>
+                          </div>
+                          <p className="mt-2">
+                            External shipment:{" "}
+                            {order.shipStationExternalShipmentId ??
+                              order.orderNumber}
+                          </p>
+                          {order.shipStationShipmentId ? (
+                            <p>Shipment ID: {order.shipStationShipmentId}</p>
+                          ) : null}
+                          {order.shipStationAddressValidationStatus ? (
+                            <p>
+                              Address validation:{" "}
+                              {order.shipStationAddressValidationStatus}
+                            </p>
+                          ) : null}
+                          {order.shipStationAddressValidationMessage ? (
+                            <p>{order.shipStationAddressValidationMessage}</p>
+                          ) : null}
+                          {order.shipStationMatchedAddress ? (
+                            <p className="whitespace-pre-line">
+                              Matched address:{" "}
+                              {order.shipStationMatchedAddress}
+                            </p>
+                          ) : null}
+                          {order.shipStationSyncError ? (
+                            <p className="mt-2 font-semibold text-[#8a1f1f]">
+                              {order.shipStationSyncError}
+                            </p>
+                          ) : null}
                         </div>
-                        <p className="mt-2">
-                          External shipment:{" "}
-                          {order.shipStationExternalShipmentId ??
-                            order.orderNumber}
-                        </p>
-                        {order.shipStationShipmentId ? (
-                          <p>Shipment ID: {order.shipStationShipmentId}</p>
-                        ) : null}
-                        {order.shipStationAddressValidationStatus ? (
-                          <p>
-                            Address validation:{" "}
-                            {order.shipStationAddressValidationStatus}
-                          </p>
-                        ) : null}
-                        {order.shipStationAddressValidationMessage ? (
-                          <p>{order.shipStationAddressValidationMessage}</p>
-                        ) : null}
-                        {order.shipStationMatchedAddress ? (
-                          <p className="whitespace-pre-line">
-                            Matched address:{" "}
-                            {order.shipStationMatchedAddress}
-                          </p>
-                        ) : null}
-                        {order.shipStationSyncError ? (
-                          <p className="mt-2 font-semibold text-[#8a1f1f]">
-                            {order.shipStationSyncError}
-                          </p>
-                        ) : null}
-                      </div>
+                      ) : null}
 
                       <div className="mt-4 divide-y divide-black/10 rounded-2xl bg-white px-4">
                         {items.map((item) => (
@@ -437,43 +442,46 @@ export default async function Page({ searchParams }: PageProps) {
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-[#62564c]">
                   Stock shown here appears on the storefront and is decremented
-                  when checkout creates an order. ShipStation sync uses
-                  SHIP_STATION_INVENTORY_LOCATION_ID when set, otherwise it
-                  tries the first ShipStation inventory location.
+                  when checkout creates an order. Update quantities here as
+                  you receive stock.
                 </p>
-                <p
-                  className={
-                    shipStationInventoryConfigured
-                      ? "mt-2 text-sm font-semibold text-[#2f5f1e]"
-                      : "mt-2 text-sm font-semibold text-[#8a1f1f]"
-                  }
-                >
-                  ShipStation inventory sync is{" "}
-                  {shipStationInventoryConfigured ? "configured" : "not configured"}.
-                </p>
+                {shipStationEnabled ? (
+                  <p
+                    className={
+                      shipStationInventoryConfigured
+                        ? "mt-2 text-sm font-semibold text-[#2f5f1e]"
+                        : "mt-2 text-sm font-semibold text-[#8a1f1f]"
+                    }
+                  >
+                    ShipStation inventory sync is{" "}
+                    {shipStationInventoryConfigured ? "configured" : "not configured"}.
+                  </p>
+                ) : null}
               </div>
               <div className="flex flex-col gap-2 sm:items-end">
                 <p className="rounded-full bg-[#fff2e4] px-4 py-2 text-sm font-bold text-[#a24b00]">
                   {products.length} variants
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <form action={syncInventoryToShipStation}>
-                    <button
-                      type="submit"
-                      className="rounded-full bg-[#171411] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#302821]"
-                    >
-                      Push to ShipStation
-                    </button>
-                  </form>
-                  <form action={pullInventoryFromShipStation}>
-                    <button
-                      type="submit"
-                      className="rounded-full border border-black/10 bg-white px-4 py-2 text-xs font-bold text-[#171411] transition hover:border-[#ea7500]/40 hover:bg-[#fff8ef]"
-                    >
-                      Pull from ShipStation
-                    </button>
-                  </form>
-                </div>
+                {shipStationEnabled ? (
+                  <div className="flex flex-wrap gap-2">
+                    <form action={syncInventoryToShipStation}>
+                      <button
+                        type="submit"
+                        className="rounded-full bg-[#171411] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#302821]"
+                      >
+                        Push to ShipStation
+                      </button>
+                    </form>
+                    <form action={pullInventoryFromShipStation}>
+                      <button
+                        type="submit"
+                        className="rounded-full border border-black/10 bg-white px-4 py-2 text-xs font-bold text-[#171411] transition hover:border-[#ea7500]/40 hover:bg-[#fff8ef]"
+                      >
+                        Pull from ShipStation
+                      </button>
+                    </form>
+                  </div>
+                ) : null}
               </div>
             </div>
             <div className="mt-6 grid gap-4">
@@ -500,29 +508,31 @@ export default async function Page({ searchParams }: PageProps) {
                         >
                           {quantity > 0 ? `${quantity} in stock` : "Out of stock"}
                         </span>
-                        <span
-                          className={
-                            sync?.shipStationInventorySyncStatus === "synced"
-                              ? "rounded-full bg-[#e8f5df] px-3 py-1 text-xs font-bold text-[#2f5f1e]"
-                              : sync?.shipStationInventorySyncStatus === "failed"
-                                ? "rounded-full bg-[#fff1f1] px-3 py-1 text-xs font-bold text-[#8a1f1f]"
-                                : "rounded-full bg-white px-3 py-1 text-xs font-bold text-[#62564c]"
-                          }
-                        >
-                          ShipStation{" "}
-                          {sync?.shipStationInventorySyncStatus ?? "pending"}
-                        </span>
+                        {shipStationEnabled ? (
+                          <span
+                            className={
+                              sync?.shipStationInventorySyncStatus === "synced"
+                                ? "rounded-full bg-[#e8f5df] px-3 py-1 text-xs font-bold text-[#2f5f1e]"
+                                : sync?.shipStationInventorySyncStatus === "failed"
+                                  ? "rounded-full bg-[#fff1f1] px-3 py-1 text-xs font-bold text-[#8a1f1f]"
+                                  : "rounded-full bg-white px-3 py-1 text-xs font-bold text-[#62564c]"
+                            }
+                          >
+                            ShipStation{" "}
+                            {sync?.shipStationInventorySyncStatus ?? "pending"}
+                          </span>
+                        ) : null}
                       </div>
                       <p className="mt-1 text-sm text-[#62564c]">
                         {product.amount} · {product.id}
                       </p>
-                      {sync?.shipStationInventorySyncedAt ? (
+                      {shipStationEnabled && sync?.shipStationInventorySyncedAt ? (
                         <p className="mt-1 text-xs text-[#62564c]">
                           Last synced{" "}
                           {sync.shipStationInventorySyncedAt.toLocaleString()}
                         </p>
                       ) : null}
-                      {sync?.shipStationInventorySyncError ? (
+                      {shipStationEnabled && sync?.shipStationInventorySyncError ? (
                         <p className="mt-1 text-xs font-semibold text-[#8a1f1f]">
                           {sync.shipStationInventorySyncError}
                         </p>

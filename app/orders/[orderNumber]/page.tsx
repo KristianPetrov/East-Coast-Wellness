@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ManualPaymentActions } from "@/app/ManualPaymentActions";
 import { formatCents } from "@/lib/money";
+import { isShipStationEnabled } from "@/lib/shipstation";
 import {
   buildVenmoPaymentUrl,
   getPaymentDetails,
@@ -137,7 +138,7 @@ export default async function Page({ params, searchParams }: PageProps) {
             </div>
           ) : null}
 
-          {order.shipStationAddressValidationStatus ? (
+          {isShipStationEnabled() && order.shipStationAddressValidationStatus ? (
             <div className="mt-6 rounded-3xl border border-black/10 bg-[#fffaf2] p-5">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#a24b00]">
                 Address Check

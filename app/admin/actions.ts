@@ -19,6 +19,7 @@ import { products } from "@/app/products";
 import { sendOrderStatusUpdatedEmail } from "@/lib/email";
 import {
   getShipStationInventoryLevels,
+  isShipStationEnabled,
   syncInventoryLevelToShipStation,
   syncInventoryLevelsToShipStation,
 } from "@/lib/shipstation";
@@ -46,6 +47,10 @@ function getRestockQuantity(item: OrderItem) {
 }
 
 async function syncRestoredInventory(productIds: string[]) {
+  if (!isShipStationEnabled()) {
+    return;
+  }
+
   const uniqueProductIds = Array.from(new Set(productIds));
 
   if (uniqueProductIds.length === 0) {
@@ -89,17 +94,19 @@ export async function updateInventory(formData: FormData) {
       set: { quantity, updatedAt: new Date() },
     });
 
-  const syncResult = await syncInventoryLevelToShipStation(productId, quantity);
+  if (isShipStationEnabled()) {
+    const syncResult = await syncInventoryLevelToShipStation(productId, quantity);
 
-  await db
-    .update(productInventory)
-    .set({
-      shipStationInventorySyncStatus: syncResult.status,
-      shipStationInventorySyncError: syncResult.error,
-      shipStationInventorySyncedAt: syncResult.syncedAt,
-      updatedAt: new Date(),
-    })
-    .where(eq(productInventory.productId, productId));
+    await db
+      .update(productInventory)
+      .set({
+        shipStationInventorySyncStatus: syncResult.status,
+        shipStationInventorySyncError: syncResult.error,
+        shipStationInventorySyncedAt: syncResult.syncedAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(productInventory.productId, productId));
+  }
 
   revalidatePath("/admin");
   revalidatePath("/");
@@ -108,6 +115,10 @@ export async function updateInventory(formData: FormData) {
 
 export async function syncInventoryToShipStation() {
   await requireAdmin();
+
+  if (!isShipStationEnabled()) {
+    return;
+  }
 
   const inventoryRows = await db.select().from(productInventory);
   const inventoryByProduct = new Map(
@@ -146,6 +157,10 @@ export async function syncInventoryToShipStation() {
 
 export async function pullInventoryFromShipStation() {
   await requireAdmin();
+
+  if (!isShipStationEnabled()) {
+    return;
+  }
 
   const inventoryRows = await db.select().from(productInventory);
   const inventoryByProduct = new Map(

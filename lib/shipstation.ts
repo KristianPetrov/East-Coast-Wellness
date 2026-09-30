@@ -106,11 +106,20 @@ function getApiKey() {
   return readConfigValue(process.env.SHIP_STATION_API_KEY);
 }
 
+// Keep the integration opt-in so saved credentials cannot enable it on their own.
+export function isShipStationEnabled() {
+  return process.env.SHIP_STATION_ENABLED?.trim().toLowerCase() === "true";
+}
+
 function getInventoryLocationId() {
   return readConfigValue(process.env.SHIP_STATION_INVENTORY_LOCATION_ID);
 }
 
 async function requestShipStation(path: string, init?: RequestInit) {
+  if (!isShipStationEnabled()) {
+    throw new Error("ShipStation integration is disabled.");
+  }
+
   const apiKey = getApiKey();
 
   if (!apiKey) {
@@ -327,12 +336,14 @@ export async function syncOrderToShipStation(
   order: Order,
   items: OrderItem[],
 ): Promise<ShipStationSyncResult> {
-  if (!getApiKey()) {
+  if (!isShipStationEnabled() || !getApiKey()) {
     return {
       status: "skipped",
       shipmentId: null,
       externalShipmentId: order.orderNumber,
-      error: "SHIP_STATION_API_KEY is not configured.",
+      error: isShipStationEnabled()
+        ? "SHIP_STATION_API_KEY is not configured."
+        : "ShipStation integration is disabled.",
       addressValidation: noAddressValidation,
     };
   }
@@ -367,10 +378,12 @@ export async function syncInventoryLevelToShipStation(
   productId: string,
   quantity: number,
 ): Promise<ShipStationInventorySyncResult> {
-  if (!getApiKey()) {
+  if (!isShipStationEnabled() || !getApiKey()) {
     return {
       status: "skipped",
-      error: "SHIP_STATION_API_KEY is not configured.",
+      error: isShipStationEnabled()
+        ? "SHIP_STATION_API_KEY is not configured."
+        : "ShipStation integration is disabled.",
       syncedAt: null,
     };
   }
@@ -456,6 +469,10 @@ function readInventoryLevels(responseBody: unknown): ShipStationInventoryLevel[]
 }
 
 export async function getShipStationInventoryLevels(productIds: string[]) {
+  if (!isShipStationEnabled()) {
+    throw new Error("ShipStation integration is disabled.");
+  }
+
   if (!getApiKey()) {
     throw new Error("SHIP_STATION_API_KEY is not configured.");
   }

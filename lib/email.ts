@@ -22,7 +22,10 @@ function getFromAddress() {
 }
 
 function getAdminNotificationEmail() {
-  return process.env.ORDER_NOTIFICATION_EMAIL ?? process.env.ADMIN_EMAIL;
+  return (
+    process.env.ORDER_NOTIFICATION_EMAIL?.trim() ||
+    "eastcoastwellnesscoaching@gmail.com"
+  );
 }
 
 function escapeHtml(value: string) {
