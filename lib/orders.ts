@@ -21,8 +21,8 @@ export const paymentMethodLabels: Record<PaymentMethod, string> = {
 export const paymentInstructions: Record<PaymentMethod, string> = {
   cashapp:
     "Cash App is no longer accepted. Please contact support for another payment method.",
-  venmo: "Pay @coastalwellnessgroupllc through Venmo.",
-  zelle: "Send Zelle payment to 307-210-6352.",
+  venmo: "Pay @East-Coast-Coaching through Venmo.",
+  zelle: "Send Zelle payment to 703-728-9990.",
 };
 
 export type { ShippingMethod } from "./shipping";
@@ -33,8 +33,8 @@ type OrderPaymentDetailsInput = Pick<
   "orderNumber" | "paymentMethod" | "totalCents"
 >;
 
-const venmoHandle = "coastalwellnessgroupllc";
-export const zellePhone = "307-210-6352";
+const venmoHandle = "East-Coast-Coaching";
+export const zellePhone = "703-728-9990";
 
 export function buildVenmoPaymentUrl(order: OrderPaymentDetailsInput) {
   const params = new URLSearchParams({
@@ -50,7 +50,7 @@ export function buildVenmoPaymentUrl(order: OrderPaymentDetailsInput) {
 export function getPaymentDetails(order: OrderPaymentDetailsInput) {
   return {
     label: `${paymentMethodLabels.venmo} or ${paymentMethodLabels.zelle}`,
-    instruction: `Pay by Venmo to @coastalwellnessgroupllc or send Zelle payment to ${zellePhone}. Include ${order.orderNumber} in the memo.`,
+    instruction: `Pay by Venmo to @${venmoHandle} or send Zelle payment to ${zellePhone}. Include ${order.orderNumber} in the memo.`,
     href: buildVenmoPaymentUrl(order),
     actionLabel: "Pay with Venmo",
   };

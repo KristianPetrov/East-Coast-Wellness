@@ -78,7 +78,7 @@ function manualPaymentHtml(order: Order) {
     <div style="margin:20px 0;padding:18px;border-radius:20px;background:#fff8ef;">
       <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#a24b00;text-transform:uppercase;letter-spacing:0.12em;">Manual Payment Options</p>
       <p style="margin:0 0 10px;"><strong>Venmo</strong></p>
-      <p style="margin:0 0 12px;color:#62564c;">Pay @coastalwellnessgroupllc. The button includes ${escapeHtml(
+      <p style="margin:0 0 12px;color:#62564c;">Pay @East-Coast-Coaching. The button includes ${escapeHtml(
         order.orderNumber,
       )} in the note.</p>
       <p style="margin:0 0 18px;"><a href="${escapeHtml(
