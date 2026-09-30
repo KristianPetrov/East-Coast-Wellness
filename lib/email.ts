@@ -17,7 +17,7 @@ const resend = process.env.RESEND_API_KEY
 function getFromAddress() {
   return (
     process.env.ORDER_EMAIL_FROM ??
-    "East Coast Wellness <orders@eastcoastwellness.co>"
+    "East Coast Wellness <orders@updates.eastcoastwellness.co>"
   );
 }
 

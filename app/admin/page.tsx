@@ -41,6 +41,16 @@ type PageProps = {
   searchParams: Promise<{ tab?: string }>;
 };
 
+const orderCreatedAtFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+  timeZone: "America/Los_Angeles",
+  timeZoneName: "short",
+});
+
 export default async function Page({ searchParams }: PageProps) {
   const session = await getAuthSession();
   const { tab } = await searchParams;
@@ -250,6 +260,12 @@ export default async function Page({ searchParams }: PageProps) {
                               {order.orderStatus}
                             </span>
                           </div>
+                          <p className="mt-2 text-sm text-[#62564c]">
+                            Created{" "}
+                            <time dateTime={order.createdAt.toISOString()}>
+                              {orderCreatedAtFormatter.format(order.createdAt)}
+                            </time>
+                          </p>
                           <h3 className="mt-2 text-2xl font-semibold">
                             {order.customerName}
                           </h3>
