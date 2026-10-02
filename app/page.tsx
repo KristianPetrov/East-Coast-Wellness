@@ -53,21 +53,25 @@ const categoryLinks = [
     label: "Molecules",
     category: "molecule",
     body: "Single research molecules in vial and kit formats.",
+    image: "/product/bpc-157-10mg.png",
   },
   {
     label: "Blends",
     category: "blend",
     body: "Signature multi-molecule research blends.",
+    image: "/product/glow-10mg-50mg-10mg.png",
   },
   {
     label: "Compounds",
     category: "compound",
     body: "Specialty research compounds.",
+    image: "/product/nad-1000mg.png",
   },
   {
     label: "Supplies",
     category: "supply",
     body: "Reconstitution solutions and lab supplies.",
+    image: "/product/reconstitution-10ml.png",
   },
 ];
 
@@ -121,10 +125,10 @@ export default async function Home() {
       <SiteHeader overlay />
 
       <section className="grain relative border-b border-ink/8 bg-[radial-gradient(ellipse_at_85%_10%,rgba(212,138,69,0.16),transparent_45%),linear-gradient(180deg,#fbf8f3_0%,#f1e9dd_100%)]">
-        <div className="relative z-10 mx-auto grid max-w-7xl gap-14 px-5 pb-20 pt-32 sm:px-6 sm:pt-36 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:px-8 lg:pb-28 lg:pt-44">
+        <div className="relative z-10 mx-auto grid max-w-7xl gap-14 px-5 pb-16 pt-28 sm:px-6 sm:pt-32 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-16 lg:px-8 lg:pb-24 lg:pt-36">
           <div>
             <p
-              className="animate-rise mb-7 flex w-fit items-center gap-3 rounded-full border border-copper/25 bg-bone/80 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-copper-deep backdrop-blur"
+              className="animate-rise mb-7 flex w-fit items-center gap-3 rounded-full border border-copper/25 bg-bone/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-copper-deep backdrop-blur"
               style={{ "--delay": "100ms" } as React.CSSProperties}
             >
               <span className="status-dot relative h-1.5 w-1.5 rounded-full bg-copper" aria-hidden="true" />
@@ -138,7 +142,7 @@ export default async function Home() {
               <span className="text-gradient-copper italic">presented with care.</span>
             </h1>
             <p
-              className="animate-rise mt-7 max-w-xl text-lg leading-8 text-muted"
+              className="animate-rise mt-7 max-w-xl text-lg leading-8 text-ink-soft"
               style={{ "--delay": "320ms" } as React.CSSProperties}
             >
               A refined catalog of research-use molecules, blends, sprays, and
@@ -157,60 +161,64 @@ export default async function Home() {
                 Read the use notice
               </a>
             </div>
-            <dl
-              className="animate-rise mt-12 grid max-w-lg grid-cols-3 divide-x divide-ink/10 border-y border-ink/10 py-5"
-              style={{ "--delay": "560ms" } as React.CSSProperties}
+            <p
+              className="animate-rise mt-6 flex items-center gap-2.5 text-sm font-medium text-muted"
+              style={{ "--delay": "540ms" } as React.CSSProperties}
             >
-              <div className="pr-4">
-                <dt className="text-[10px] font-semibold uppercase tracking-[0.2em] text-faint">
-                  Catalog
-                </dt>
-                <dd className="mt-1 font-display text-2xl sm:text-3xl">{allGroups.length}+</dd>
-              </div>
-              <div className="px-4">
-                <dt className="text-[10px] font-semibold uppercase tracking-[0.2em] text-faint">
-                  Formats
-                </dt>
-                <dd className="mt-1 font-display text-2xl sm:text-3xl">Vial · Kit</dd>
-              </div>
-              <div className="pl-4">
-                <dt className="text-[10px] font-semibold uppercase tracking-[0.2em] text-faint">
-                  Checkout
-                </dt>
-                <dd className="mt-1 font-display text-2xl sm:text-3xl">Guest</dd>
-              </div>
-            </dl>
+              <span className="h-px w-6 bg-copper/60" aria-hidden />
+              For laboratory research use only.
+            </p>
           </div>
 
           <div
-            className="animate-scale-in relative"
+            className="animate-scale-in relative mx-auto w-full max-w-xl lg:max-w-none"
             style={{ "--delay": "300ms" } as React.CSSProperties}
           >
-            <div className="absolute -inset-6 -z-10 rounded-[2.5rem] bg-copper/10 blur-3xl" aria-hidden />
-            <div className="float-slow relative rounded-[1.75rem] border border-white bg-white p-3 shadow-[0_50px_100px_-40px_rgba(60,35,10,0.55)] ring-1 ring-ink/5">
-              <div className="overflow-hidden rounded-[1.25rem]">
+            <div className="absolute -inset-6 -z-10 rounded-[3rem] bg-copper/10 blur-3xl" aria-hidden />
+            <div className="relative overflow-hidden rounded-[2rem] border border-white bg-white shadow-[0_50px_100px_-40px_rgba(60,35,10,0.55)] ring-1 ring-ink/5">
+              <div
+                className="pointer-events-none absolute left-1/2 top-1/2 h-[120%] w-[120%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-copper/15"
+                aria-hidden
+              />
+              <div
+                className="pointer-events-none absolute left-1/2 top-1/2 h-[85%] w-[85%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-copper/10"
+                aria-hidden
+              />
+              <div className="relative flex items-end justify-center gap-2 px-6 pb-4 pt-12 sm:gap-4 sm:px-10 sm:pt-16">
                 <Image
-                  src="/ecw-reconsitution-vials.PNG"
-                  alt="East Coast Wellness reconstitution solution vials"
-                  width={1774}
-                  height={887}
-                  className="object-cover"
+                  src="/product/bpc-157-10mg.png"
+                  alt="BPC-157 research vial"
+                  width={500}
+                  height={900}
                   priority
+                  className="float-slow mb-2 h-auto w-[27%] mix-blend-multiply [filter:brightness(1.07)]"
+                />
+                <Image
+                  src="/product/glow-10mg-50mg-10mg.png"
+                  alt="GLOW research blend vial"
+                  width={500}
+                  height={900}
+                  priority
+                  className="relative z-10 h-auto w-[36%] mix-blend-multiply [filter:brightness(1.07)]"
+                />
+                <Image
+                  src="/product/nad-1000mg.png"
+                  alt="NAD+ research vial"
+                  width={500}
+                  height={900}
+                  priority
+                  className="float-slow mb-2 h-auto w-[27%] mix-blend-multiply [filter:brightness(1.07)]"
+                  style={{ animationDelay: "-3s" }}
                 />
               </div>
-              <div className="flex items-center justify-between gap-4 px-3 pb-2 pt-4">
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-copper">
-                    The research catalog
-                  </p>
-                  <p className="mt-1 font-display text-xl sm:text-2xl">
-                    Vials, sprays, blends, and supplies
-                  </p>
-                </div>
+              <div className="relative flex items-center justify-between gap-4 border-t border-copper/15 bg-white/60 px-6 py-4 backdrop-blur sm:px-8">
+                <p className="font-display text-lg sm:text-xl">
+                  Vials, sprays, blends, and supplies
+                </p>
                 <Link
                   href="/store"
                   aria-label="Shop the catalog"
-                  className="group flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink text-bone transition hover:bg-copper"
+                  className="group flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink text-bone transition hover:bg-copper"
                 >
                   <ArrowIcon />
                 </Link>
@@ -220,24 +228,9 @@ export default async function Home() {
         </div>
       </section>
 
-      <section aria-label="Our standards" className="border-b border-ink/8 bg-bone">
-        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-px bg-ink/8 lg:grid-cols-4">
-          {standards.map((standard, index) => (
-            <div key={standard.title} className="flex items-center gap-3 bg-bone px-5 py-5 sm:px-6">
-              <span className="font-display text-lg italic text-copper">
-                0{index + 1}
-              </span>
-              <span className="text-[13px] font-medium leading-snug text-ink-soft">
-                {standard.title}
-              </span>
-            </div>
-          ))}
-        </div>
-      </section>
-
       <section
         id="products"
-        className="relative overflow-hidden bg-night py-24 text-white sm:py-28"
+        className="relative overflow-hidden bg-night py-20 text-white sm:py-24"
       >
         <div className="rule-copper absolute inset-x-0 top-0 h-px" aria-hidden="true" />
         <div
@@ -278,7 +271,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="mx-auto w-full max-w-7xl px-5 py-24 sm:px-6 sm:py-28 lg:px-8">
+      <section className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-6 sm:py-24 lg:px-8">
         <Reveal className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
           <div>
             <Eyebrow>Shop by category</Eyebrow>
@@ -299,20 +292,26 @@ export default async function Home() {
             <Reveal key={category.category} delay={index * 80}>
               <Link
                 href={`/store?category=${category.category}`}
-                className="group flex h-full flex-col justify-between gap-10 rounded-2xl border border-ink/10 bg-bone p-6 transition duration-500 hover:-translate-y-1 hover:border-copper/40 hover:bg-white hover:shadow-[0_30px_60px_-35px_rgba(60,35,10,0.45)]"
+                className="group relative flex h-full min-h-[22rem] flex-col justify-end overflow-hidden rounded-2xl border border-ink/10 bg-bone transition duration-500 hover:-translate-y-1 hover:border-copper/40 hover:shadow-[0_30px_60px_-35px_rgba(60,35,10,0.45)]"
               >
-                <span className="font-display text-lg italic text-copper">
-                  0{index + 1}
-                </span>
-                <span>
+                <div className="absolute inset-x-0 top-0 flex h-[62%] items-center justify-center bg-white">
+                  <Image
+                    src={category.image}
+                    alt=""
+                    width={300}
+                    height={540}
+                    className="h-[88%] w-auto object-contain mix-blend-multiply [filter:brightness(1.07)] transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-105"
+                  />
+                </div>
+                <div className="relative bg-bone p-6 pt-5">
                   <span className="flex items-center justify-between font-display text-3xl">
                     {category.label}
                     <ArrowIcon className="h-5 w-5 text-copper" />
                   </span>
-                  <span className="mt-2 block text-sm leading-6 text-muted">
+                  <span className="mt-1.5 block min-h-12 text-sm leading-6 text-muted">
                     {category.body}
                   </span>
-                </span>
+                </div>
               </Link>
             </Reveal>
           ))}
@@ -320,7 +319,7 @@ export default async function Home() {
       </section>
 
       <section id="quality" className="border-y border-ink/8 bg-bone">
-        <div className="mx-auto grid max-w-7xl gap-14 px-5 py-24 sm:px-6 sm:py-28 lg:grid-cols-2 lg:items-center lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-14 px-5 py-20 sm:px-6 sm:py-24 lg:grid-cols-2 lg:items-center lg:px-8">
           <Reveal>
             <div className="group overflow-hidden rounded-[1.75rem] border border-white bg-white p-3 shadow-[0_50px_100px_-50px_rgba(60,35,10,0.5)]">
               <div className="overflow-hidden rounded-[1.25rem]">
@@ -367,7 +366,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="mx-auto w-full max-w-7xl px-5 py-24 sm:px-6 sm:py-28 lg:px-8">
+      <section className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-6 sm:py-24 lg:px-8">
         <Reveal className="max-w-2xl">
           <Eyebrow>How ordering works</Eyebrow>
           <h2 className="mt-5 font-display text-4xl leading-tight tracking-tight sm:text-5xl">

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
+import { Fraunces, Geist, Geist_Mono } from "next/font/google";
 import { getCurrentPricingTier } from "@/lib/member-pricing";
 import { getProductsWithPrices } from "@/lib/pricing";
 import { siteConfig } from "@/lib/seo";
@@ -16,11 +16,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const displaySerif = Instrument_Serif({
+const displaySerif = Fraunces({
   variable: "--font-display-serif",
   subsets: ["latin"],
-  weight: "400",
   style: ["normal", "italic"],
+  axes: ["opsz"],
 });
 
 export const metadata: Metadata = {

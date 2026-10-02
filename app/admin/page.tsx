@@ -82,7 +82,7 @@ export default async function Page({ searchParams }: PageProps) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-paper px-5 py-14 text-ink">
         <section className="max-w-md rounded-2xl border border-ink/10 bg-white p-10 text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-copper">Admin</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-copper">Admin</p>
           <h1 className="mt-4 font-display text-4xl tracking-tight">Admin access required.</h1>
           <p className="mt-3 text-muted">
             Sign in with the admin email configured in ADMIN_EMAIL.
@@ -204,7 +204,7 @@ export default async function Page({ searchParams }: PageProps) {
               className="h-auto w-36"
             />
           </Link>
-          <p className="mt-5 text-[10px] font-semibold uppercase tracking-[0.3em] text-copper-bright">
+          <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-copper-bright">
             Admin console
           </p>
         </div>
@@ -227,7 +227,7 @@ export default async function Page({ searchParams }: PageProps) {
                 <span className="flex-1">{item.label}</span>
                 {item.badge ? (
                   <span
-                    className={`rounded-md px-1.5 py-0.5 text-[11px] tabular-nums ${
+                    className={`rounded-md px-1.5 py-0.5 text-xs tabular-nums ${
                       item.alert ? "bg-copper text-white" : "bg-white/10 text-white/60"
                     }`}
                   >

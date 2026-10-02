@@ -325,7 +325,7 @@ export function CheckoutPage({ pricingTier, catalog }: CheckoutPageProps) {
 
         <aside className="h-fit rounded-2xl border border-ink/10 bg-bone lg:sticky lg:top-24">
           <div className="flex items-center justify-between border-b border-ink/10 px-6 py-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-copper">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-copper">
               Order summary
             </p>
             <p className="text-sm text-muted">
@@ -339,7 +339,7 @@ export function CheckoutPage({ pricingTier, catalog }: CheckoutPageProps) {
                   <li key={item.id} className="flex items-center gap-4 py-4">
                     <div className="relative flex h-16 w-14 shrink-0 items-center justify-center rounded-lg bg-white ring-1 ring-ink/8">
                       <Image src={item.image} alt="" width={112} height={128} className="h-full w-full object-contain p-1" />
-                      <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-ink px-1 text-[10px] font-semibold text-bone">
+                      <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-ink px-1 text-[11px] font-semibold text-bone">
                         {item.quantity}
                       </span>
                     </div>

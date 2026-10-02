@@ -114,7 +114,7 @@ export function FloatingCart({ pricingTier, catalog }: FloatingCartProps) {
             {count}
           </span>
           <span>
-            <span className="block text-[10px] font-semibold uppercase tracking-[0.24em] text-copper-bright">
+            <span className="block text-[11px] font-semibold uppercase tracking-[0.24em] text-copper-bright">
               Your cart
             </span>
             <span className="block text-sm font-medium">{formatPrice(total)}</span>
@@ -145,7 +145,7 @@ export function FloatingCart({ pricingTier, catalog }: FloatingCartProps) {
         >
           <div className="flex items-center justify-between border-b border-ink/10 px-6 py-5">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-copper">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-copper">
                 Your cart
               </p>
               <p className="mt-1 font-display text-2xl">
@@ -231,7 +231,7 @@ export function FloatingCart({ pricingTier, catalog }: FloatingCartProps) {
                             Remove
                           </button>
                         </div>
-                        <p className="mt-2 text-[11px] text-faint">
+                        <p className="mt-2 text-xs text-faint">
                           {formatPrice(unitPrice)} each
                         </p>
                       </div>
@@ -258,7 +258,7 @@ export function FloatingCart({ pricingTier, catalog }: FloatingCartProps) {
 
           <div className="border-t border-ink/10 bg-bone px-6 py-5">
             <div className="flex items-baseline justify-between">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted">
+              <span className="text-xs font-semibold uppercase tracking-[0.22em] text-muted">
                 Subtotal
               </span>
               <span className="font-display text-3xl">{formatPrice(total)}</span>

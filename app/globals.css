@@ -23,9 +23,9 @@
   --color-bone: #fbf8f3;
   --color-sand: #ede5d9;
   --color-ink: #16130f;
-  --color-ink-soft: #3a332c;
-  --color-muted: #6b6057;
-  --color-faint: #998d82;
+  --color-ink-soft: #2f2923;
+  --color-muted: #4e443c;
+  --color-faint: #766a5f;
   --color-night: #100d0a;
   --color-copper: #a8591b;
   --color-copper-deep: #7f4213;
@@ -42,7 +42,14 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-feature-settings: "ss01", "cv11";
+  font-size: 1.0625rem;
+  font-weight: 450;
+  line-height: 1.6;
+}
+
+/* Display serif: sturdier weight so large headlines hold up on bone paper. */
+.font-display {
+  font-weight: 500;
 }
 
 html {

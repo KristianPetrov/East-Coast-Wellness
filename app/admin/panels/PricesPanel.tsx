@@ -35,7 +35,7 @@ function PriceField({
           className={`${adminInput} no-spin pl-7 tabular-nums ${isChanged ? "border-copper/40! bg-copper-wash/40!" : ""}`}
         />
       </span>
-      <span className="text-[11px] font-normal normal-case tracking-normal text-faint">
+      <span className="text-xs font-normal normal-case tracking-normal text-faint">
         Default {formatPrice(defaultPrice)}
       </span>
     </label>

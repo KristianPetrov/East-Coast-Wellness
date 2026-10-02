@@ -72,7 +72,7 @@ export function ProductCard({
         <div className="absolute inset-x-3 top-3 flex flex-wrap items-start justify-between gap-2">
           {showsInventory ? (
             <span
-              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] backdrop-blur ${
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] backdrop-blur ${
                 isOutOfStock
                   ? "bg-rust-wash/90 text-rust"
                   : isLowStock
@@ -91,7 +91,7 @@ export function ProductCard({
             <span />
           )}
           {pricingTier === "member" ? (
-            <span className="rounded-full bg-ink px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-copper-bright">
+            <span className="rounded-full bg-ink px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-copper-bright">
               Member
             </span>
           ) : null}
@@ -101,7 +101,7 @@ export function ProductCard({
       <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-copper sm:text-[11px]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-copper sm:text-xs">
               {group.category}
             </p>
             <h2 className="mt-1.5 font-display text-xl leading-tight text-ink sm:text-[1.7rem]">
@@ -112,7 +112,7 @@ export function ProductCard({
             <p className="text-base font-medium tabular-nums text-ink sm:text-lg">
               {formatPrice(selectedPrice)}
             </p>
-            <p className="text-[10px] uppercase tracking-[0.14em] text-faint sm:text-[11px]">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-faint sm:text-xs">
               {getProductPackageLabel(packageType)}
             </p>
           </div>
@@ -120,7 +120,7 @@ export function ProductCard({
 
         {hasVariants ? (
           <fieldset className="min-w-0">
-            <legend className="mb-2 text-[11px] font-medium uppercase tracking-[0.16em] text-muted">
+            <legend className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-muted">
               Strength
             </legend>
             <div className="flex flex-wrap gap-1.5">
@@ -181,7 +181,7 @@ export function ProductCard({
 
         <div className="mt-auto grid gap-2 border-t border-ink/8 pt-4">
           {packageType === "kit" && availablePackages !== undefined && !isOutOfStock ? (
-            <span className="text-[11px] uppercase tracking-[0.14em] text-faint">
+            <span className="text-xs uppercase tracking-[0.14em] text-faint">
               {`${availablePackages} ${availablePackages === 1 ? "kit" : "kits"} available`}
             </span>
           ) : null}

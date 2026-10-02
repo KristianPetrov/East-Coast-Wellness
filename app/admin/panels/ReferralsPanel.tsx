@@ -111,7 +111,7 @@ export function ReferralsPanel({
                       ["Discounts", formatCents(totals?.discountCents ?? 0)],
                     ].map(([label, value]) => (
                       <div key={label} className="px-4 py-3">
-                        <dt className="text-[10px] font-semibold uppercase tracking-[0.16em] text-faint">{label}</dt>
+                        <dt className="text-[11px] font-semibold uppercase tracking-[0.16em] text-faint">{label}</dt>
                         <dd className="mt-0.5 font-medium tabular-nums">{value}</dd>
                       </div>
                     ))}

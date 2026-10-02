@@ -110,7 +110,7 @@ export function OrderDetails({
 
         {!isCancelled && !isPaid ? (
           <div className="border-b border-ink/10 p-6 sm:p-10">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-copper">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-copper">
               Complete payment
             </p>
             <p className="mt-3 max-w-2xl leading-7 text-muted">
@@ -124,7 +124,7 @@ export function OrderDetails({
 
         {isShipStationEnabled() && order.shipStationAddressValidationStatus ? (
           <div className="border-b border-ink/10 p-6 sm:p-10">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-copper">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-copper">
               Address check
             </p>
             <p className="mt-2 text-lg font-medium capitalize">
@@ -145,7 +145,7 @@ export function OrderDetails({
 
         <div className="grid gap-10 p-6 sm:p-10 lg:grid-cols-[1.4fr_1fr]">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-copper">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-copper">
               Items
             </p>
             <ul className="mt-4 divide-y divide-ink/10 border-y border-ink/10">
@@ -165,7 +165,7 @@ export function OrderDetails({
             </ul>
           </div>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-copper">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-copper">
               Summary
             </p>
             <dl className="mt-4 space-y-3 text-sm">

@@ -144,7 +144,7 @@ export function InventoryPanel({
 
       {visible.length > 0 ? (
         <div className="overflow-hidden rounded-xl border border-ink/10 bg-white">
-          <div className="hidden grid-cols-[1fr_9rem_7rem_6.5rem] items-center gap-4 border-b border-ink/10 bg-bone px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-faint sm:grid">
+          <div className="hidden grid-cols-[1fr_9rem_7rem_6.5rem] items-center gap-4 border-b border-ink/10 bg-bone px-5 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-faint sm:grid">
             <span>Product</span>
             <span>Status</span>
             <span>Quantity</span>

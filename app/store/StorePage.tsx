@@ -206,7 +206,7 @@ export function StorePage({
       </div>
 
       <section className="mx-auto max-w-7xl px-5 py-10 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-[0.18em] text-faint">
+        <div className="flex items-center justify-between text-xs font-medium uppercase tracking-[0.18em] text-faint">
           <p aria-live="polite">
             Showing {filteredGroups.length} of {productGroups.length} products
           </p>

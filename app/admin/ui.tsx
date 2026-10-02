@@ -5,7 +5,7 @@ export const adminInput =
   "w-full rounded-lg border border-ink/12 bg-white px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-ink outline-none transition placeholder:text-faint hover:border-ink/25 focus:border-copper focus:ring-4 focus:ring-copper/12";
 
 export const adminLabel =
-  "grid gap-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted";
+  "grid gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-muted";
 
 export const adminCheckbox =
   "flex cursor-pointer items-center gap-2.5 rounded-lg border border-ink/12 bg-white px-3 py-2.5 text-sm font-medium text-ink-soft transition hover:border-ink/25 has-[:checked]:border-copper/40 has-[:checked]:bg-copper-wash/60";
@@ -53,7 +53,7 @@ export function StatCard({
   }[tone];
   const content = (
     <>
-      <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+      <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted">
         <span className={`h-1.5 w-1.5 rounded-full ${dot}`} aria-hidden />
         {label}
       </p>
@@ -102,7 +102,7 @@ export function FilterTabs({
             {option.label}
             {option.count !== undefined ? (
               <span
-                className={`rounded-md px-1.5 py-0.5 text-[11px] tabular-nums ${
+                className={`rounded-md px-1.5 py-0.5 text-xs tabular-nums ${
                   isActive ? "bg-white/15 text-bone" : "bg-sand text-muted"
                 }`}
               >

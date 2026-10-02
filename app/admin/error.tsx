@@ -17,7 +17,7 @@ export default function AdminError({
   return (
     <main className="flex min-h-screen items-center justify-center bg-paper px-5 py-14 text-ink">
       <section className="max-w-md rounded-2xl border border-ink/10 bg-white p-10 text-center">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-rust">
+        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-rust">
           Something went wrong
         </p>
         <h1 className="mt-4 font-display text-4xl tracking-tight">The dashboard hit a snag.</h1>

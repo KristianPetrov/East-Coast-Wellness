@@ -43,7 +43,7 @@ export function CartButton() {
       {count > 0 ? (
         <span
           key={count}
-          className="cart-pop absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-copper px-1 text-[10px] font-semibold text-white ring-2 ring-paper"
+          className="cart-pop absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-copper px-1 text-[11px] font-semibold text-white ring-2 ring-paper"
         >
           {count}
         </span>

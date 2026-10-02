@@ -164,7 +164,7 @@ export function OrdersPanel({
 
       {visibleOrders.length > 0 ? (
         <div className="overflow-hidden rounded-xl border border-ink/10 bg-white">
-          <div className="hidden grid-cols-[1.3fr_1.4fr_1.2fr_0.7fr_1.5rem] gap-4 border-b border-ink/10 bg-bone px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-faint lg:grid">
+          <div className="hidden grid-cols-[1.3fr_1.4fr_1.2fr_0.7fr_1.5rem] gap-4 border-b border-ink/10 bg-bone px-5 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-faint lg:grid">
             <span>Order</span>
             <span>Customer</span>
             <span>Status</span>
@@ -257,7 +257,7 @@ function OrderRow({
 
       <div className="grid gap-6 border-t border-ink/8 bg-paper/60 px-5 py-6 lg:grid-cols-[1.1fr_0.9fr_1.2fr]">
         <section>
-          <h3 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-faint">Items</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-faint">Items</h3>
           <ul className="mt-3 divide-y divide-ink/8 rounded-lg border border-ink/10 bg-white px-4">
             {products.map((item) => (
               <li key={item.id} className="flex justify-between gap-4 py-3 text-sm">
@@ -288,7 +288,7 @@ function OrderRow({
         </section>
 
         <section>
-          <h3 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-faint">Customer</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-faint">Customer</h3>
           <div className="mt-3 rounded-lg border border-ink/10 bg-white p-4 text-sm leading-6">
             <p className="font-medium">{order.customerName}</p>
             <p className="text-muted">
@@ -351,7 +351,7 @@ function OrderRow({
         </section>
 
         <section>
-          <h3 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-faint">Fulfillment</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-faint">Fulfillment</h3>
           <form
             action={updateOrderStatus}
             className="mt-3 grid gap-3 rounded-lg border border-ink/10 bg-white p-4 sm:grid-cols-2"
