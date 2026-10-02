@@ -20,21 +20,25 @@ export function ManualPaymentActions({
   }
 
   return (
-    <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+    <div className="mt-6 flex flex-col gap-3 sm:flex-row">
       <Link
         href={venmoUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="rounded-full bg-[#171411] px-5 py-3 text-center text-sm font-bold text-white transition hover:bg-[#302821]"
+        className="btn-sheen rounded-full bg-ink px-6 py-3.5 text-center text-sm font-medium tracking-wide text-bone transition hover:-translate-y-0.5 hover:bg-ink-soft"
       >
         Pay with Venmo
       </Link>
       <button
         type="button"
         onClick={copyZelleDetails}
-        className="rounded-full border border-black/10 bg-white px-5 py-3 text-sm font-bold text-[#171411] transition hover:border-[#ea7500]/40 hover:bg-[#fff8ef]"
+        className={`rounded-full border px-6 py-3.5 text-sm font-medium tracking-wide transition hover:-translate-y-0.5 ${
+          copied
+            ? "border-sage/30 bg-sage-wash text-sage"
+            : "border-ink/15 bg-bone text-ink hover:border-ink/30"
+        }`}
       >
-        {copied ? "Zelle details copied" : "Copy Zelle details"}
+        {copied ? "Zelle details copied ✓" : "Copy Zelle details"}
       </button>
     </div>
   );

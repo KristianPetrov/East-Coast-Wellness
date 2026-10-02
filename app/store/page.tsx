@@ -4,6 +4,8 @@ import { getCurrentPricingTier } from "@/lib/member-pricing";
 import { absoluteUrl, siteConfig } from "@/lib/seo";
 import { getProductsWithPrices } from "@/lib/pricing";
 import { groupProducts } from "../products";
+import { SiteFooter } from "../SiteFooter";
+import { SiteHeader } from "../SiteHeader";
 import { StorePage } from "./StorePage";
 
 export const metadata: Metadata = {
@@ -26,7 +28,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function Page() {
+type PageProps = {
+  searchParams: Promise<{ category?: string; q?: string }>;
+};
+
+export default async function Page({ searchParams }: PageProps) {
+  const { category, q } = await searchParams;
   const [inventoryByProduct, pricingTier, catalog] = await Promise.all([
     getInventoryByProductId(),
     getCurrentPricingTier(),
@@ -60,11 +67,15 @@ export default async function Page() {
           __html: JSON.stringify(structuredData).replace(/</g, "\\u003c"),
         }}
       />
+      <SiteHeader />
       <StorePage
+        initialCategory={category}
+        initialQuery={q}
         catalog={catalog}
         inventoryByProduct={inventoryByProduct}
         pricingTier={pricingTier}
       />
+      <SiteFooter />
     </>
   );
 }

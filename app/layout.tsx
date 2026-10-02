@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
+import { Fraunces, Geist, Geist_Mono } from "next/font/google";
 import { getCurrentPricingTier } from "@/lib/member-pricing";
 import { getProductsWithPrices } from "@/lib/pricing";
 import { siteConfig } from "@/lib/seo";
@@ -16,11 +16,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const displaySerif = Instrument_Serif({
+const displaySerif = Fraunces({
   variable: "--font-display-serif",
   subsets: ["latin"],
-  weight: "400",
   style: ["normal", "italic"],
+  axes: ["opsz"],
 });
 
 export const metadata: Metadata = {
@@ -81,7 +81,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#f7f2ea",
+  themeColor: "#f6f1e9",
   colorScheme: "light",
 };
 
@@ -98,6 +98,7 @@ export default async function RootLayout({
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} ${displaySerif.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">

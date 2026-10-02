@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { desc } from "drizzle-orm";
@@ -12,27 +13,23 @@ import {
   referralPartners,
   users,
 } from "@/db/schema";
-import { formatPrice, hasKitPricing, products } from "@/app/products";
-import { formatCents } from "@/lib/money";
+import { products } from "@/app/products";
 import { getPriceOverrides, getProductsWithPrices } from "@/lib/pricing";
 import { isShipStationEnabled } from "@/lib/shipstation";
+import { SignOutButton } from "@/app/account/SignOutButton";
+import { btnPrimary } from "@/app/ui";
+import { AccountsPanel } from "./panels/AccountsPanel";
 import {
-  cancelOrder,
-  createReferralCode,
-  createReferralPartner,
-  deleteOrder,
-  pullInventoryFromShipStation,
-  syncInventoryToShipStation,
-  updateInventory,
-  updateMemberPricing,
-  resetProductPrices,
-  updateOrderStatus,
-  updateProductPrices,
-  updateReferralCode,
-} from "./actions";
+  InventoryPanel,
+  LOW_STOCK_THRESHOLD,
+  type StockFilter,
+} from "./panels/InventoryPanel";
+import { OrdersPanel, type OrderFilter } from "./panels/OrdersPanel";
+import { PricesPanel } from "./panels/PricesPanel";
+import { ReferralsPanel, type ReferralTotals } from "./panels/ReferralsPanel";
 
 export const metadata: Metadata = {
-  title: "Admin Dashboard | East Coast Wellness",
+  title: "Admin Dashboard",
   description: "Manage East Coast Wellness orders and inventory.",
   robots: {
     index: false,
@@ -41,29 +38,41 @@ export const metadata: Metadata = {
 };
 
 type PageProps = {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; status?: string; stock?: string; q?: string }>;
 };
 
-const orderCreatedAtFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-  hour: "numeric",
-  minute: "2-digit",
-  timeZone: "America/Los_Angeles",
-  timeZoneName: "short",
-});
+type Tab = "orders" | "inventory" | "prices" | "accounts" | "referrals";
+
+const orderFilters: OrderFilter[] = ["all", "payment", "ship", "shipped", "cancelled"];
+const stockFilters: StockFilter[] = ["all", "alerts", "out"];
+
+function NavIcon({ tab }: { tab: Tab }) {
+  const paths: Record<Tab, string> = {
+    orders: "M5 7h14l-1.2 11.2a2 2 0 0 1-2 1.8H8.2a2 2 0 0 1-2-1.8L5 7Zm4 0V6a3 3 0 0 1 6 0v1",
+    inventory: "M4 8l8-4 8 4-8 4-8-4Zm0 0v8l8 4 8-4V8M12 12v8",
+    prices: "M4 12V5a1 1 0 0 1 1-1h7l8 8-8 8-8-8Zm4.5-4.5h.01",
+    accounts: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0",
+    referrals: "M8 12h8M10 8H7a4 4 0 0 0 0 8h3m4-8h3a4 4 0 0 1 0 8h-3",
+  };
+
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-[18px] w-[18px] shrink-0" aria-hidden>
+      <path d={paths[tab]} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 export default async function Page({ searchParams }: PageProps) {
   const session = await getAuthSession();
-  const { tab } = await searchParams;
-  const activeTab =
+  const { tab, status, stock, q } = await searchParams;
+  const activeTab: Tab =
     tab === "inventory" ||
     tab === "prices" ||
     tab === "accounts" ||
     tab === "referrals"
       ? tab
       : "orders";
+  const query = q?.trim() || undefined;
 
   if (!session?.user) {
     redirect("/login?callbackUrl=/admin");
@@ -71,14 +80,16 @@ export default async function Page({ searchParams }: PageProps) {
 
   if (session.user.role !== "admin") {
     return (
-      <main className="min-h-screen bg-[#f7f2ea] px-6 py-14 text-[#171411]">
-        <section className="mx-auto max-w-3xl rounded-4xl border border-black/10 bg-white p-8 text-center shadow-xl shadow-orange-950/10">
-          <h1 className="text-4xl font-semibold tracking-tighter">
-            Admin access required.
-          </h1>
-          <p className="mt-4 text-[#62564c]">
+      <main className="flex min-h-screen items-center justify-center bg-paper px-5 py-14 text-ink">
+        <section className="max-w-md rounded-2xl border border-ink/10 bg-white p-10 text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-copper">Admin</p>
+          <h1 className="mt-4 font-display text-4xl tracking-tight">Admin access required.</h1>
+          <p className="mt-3 text-muted">
             Sign in with the admin email configured in ADMIN_EMAIL.
           </p>
+          <Link href="/" className={`${btnPrimary} mt-8`}>
+            Back to storefront
+          </Link>
         </section>
       </main>
     );
@@ -112,9 +123,13 @@ export default async function Page({ searchParams }: PageProps) {
   const inventoryByProduct = new Map(
     inventoryRows.map((row) => [row.productId, row.quantity]),
   );
-  const inventorySyncByProduct = new Map(
-    inventoryRows.map((row) => [row.productId, row]),
-  );
+  const outOfStockCount = products.filter(
+    (product) => (inventoryByProduct.get(product.id) ?? 0) <= 0,
+  ).length;
+  const lowStockCount = products.filter((product) => {
+    const quantity = inventoryByProduct.get(product.id) ?? 0;
+    return quantity > 0 && quantity <= LOW_STOCK_THRESHOLD;
+  }).length;
   const shipStationEnabled = isShipStationEnabled();
   const shipStationInventoryLocationId =
     process.env.SHIP_STATION_INVENTORY_LOCATION_ID?.trim();
@@ -134,954 +149,194 @@ export default async function Page({ searchParams }: PageProps) {
   const activeReferralOrders = orderRows.filter(
     (order) => order.orderStatus !== "cancelled" && order.referralPartnerId,
   );
+  const sumTotals = (matching: typeof orderRows): ReferralTotals => ({
+    orders: matching.length,
+    salesCents: matching.reduce((total, order) => total + order.totalCents, 0),
+    discountCents: matching.reduce(
+      (total, order) => total + order.referralDiscountCents,
+      0,
+    ),
+  });
   const referralTotalsByPartner = new Map(
-    referralPartnerRows.map((partner) => {
-      const partnerOrders = activeReferralOrders.filter(
-        (order) => order.referralPartnerId === partner.id,
-      );
-
-      return [
-        partner.id,
-        {
-          orders: partnerOrders.length,
-          salesCents: partnerOrders.reduce(
-            (total, order) => total + order.totalCents,
-            0,
-          ),
-          discountCents: partnerOrders.reduce(
-            (total, order) => total + order.referralDiscountCents,
-            0,
-          ),
-        },
-      ];
-    }),
+    referralPartnerRows.map((partner) => [
+      partner.id,
+      sumTotals(
+        activeReferralOrders.filter((order) => order.referralPartnerId === partner.id),
+      ),
+    ]),
   );
   const referralTotalsByCode = new Map(
-    referralCodeRows.map((code) => {
-      const codeOrders = activeReferralOrders.filter(
-        (order) => order.referralCodeId === code.id,
-      );
-
-      return [
-        code.id,
-        {
-          orders: codeOrders.length,
-          salesCents: codeOrders.reduce(
-            (total, order) => total + order.totalCents,
-            0,
-          ),
-          discountCents: codeOrders.reduce(
-            (total, order) => total + order.referralDiscountCents,
-            0,
-          ),
-        },
-      ];
-    }),
+    referralCodeRows.map((code) => [
+      code.id,
+      sumTotals(activeReferralOrders.filter((order) => order.referralCodeId === code.id)),
+    ]),
   );
+  const awaitingActionCount = orderRows.filter(
+    (order) =>
+      order.orderStatus !== "cancelled" &&
+      (order.paymentStatus === "pending" || order.shippingStatus === "pending"),
+  ).length;
+
+  const navItems: { tab: Tab; label: string; href: string; badge?: number; alert?: boolean }[] = [
+    { tab: "orders", label: "Orders", href: "/admin", badge: awaitingActionCount, alert: awaitingActionCount > 0 },
+    {
+      tab: "inventory",
+      label: "Inventory",
+      href: "/admin?tab=inventory",
+      badge: outOfStockCount + lowStockCount,
+      alert: outOfStockCount > 0,
+    },
+    { tab: "prices", label: "Prices", href: "/admin?tab=prices" },
+    { tab: "accounts", label: "Accounts", href: "/admin?tab=accounts", badge: userRows.length },
+    { tab: "referrals", label: "Referrals", href: "/admin?tab=referrals", badge: referralPartnerRows.length },
+  ];
 
   return (
-    <main className="min-h-screen bg-[#f7f2ea] px-6 py-14 text-[#171411]">
-      <section className="mx-auto max-w-7xl">
-        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-[0.28em] text-[#c95f00]">
-              Admin
-            </p>
-            <h1 className="mt-3 text-5xl font-semibold tracking-tighter">
-              Dashboard.
-            </h1>
-          </div>
+    <div className="min-h-screen bg-paper text-ink lg:grid lg:grid-cols-[16.5rem_1fr]">
+      <aside className="hidden bg-night text-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col">
+        <div className="px-6 pb-6 pt-7">
+          <Link href="/" className="block w-fit rounded-lg bg-bone px-3 py-2">
+            <Image
+              src="/ecw-logo-horizontal.PNG"
+              alt="East Coast Wellness"
+              width={853}
+              height={274}
+              className="h-auto w-36"
+            />
+          </Link>
+          <p className="mt-5 text-[11px] font-semibold uppercase tracking-[0.3em] text-copper-bright">
+            Admin console
+          </p>
+        </div>
+        <nav aria-label="Admin" className="grid gap-1 px-3">
+          {navItems.map((item) => {
+            const isActive = item.tab === activeTab;
+
+            return (
+              <Link
+                key={item.tab}
+                href={item.href}
+                aria-current={isActive ? "page" : undefined}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+                  isActive
+                    ? "bg-white/10 text-white"
+                    : "text-white/55 hover:bg-white/5 hover:text-white"
+                }`}
+              >
+                <NavIcon tab={item.tab} />
+                <span className="flex-1">{item.label}</span>
+                {item.badge ? (
+                  <span
+                    className={`rounded-md px-1.5 py-0.5 text-xs tabular-nums ${
+                      item.alert ? "bg-copper text-white" : "bg-white/10 text-white/60"
+                    }`}
+                  >
+                    {item.badge}
+                  </span>
+                ) : null}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="mt-auto border-t border-white/10 px-6 py-5">
           <Link
             href="/store"
-            className="rounded-full bg-[#ea7500] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#c95f00]"
+            className="flex items-center gap-2 text-sm text-white/60 transition hover:text-white"
           >
-            Storefront
+            View storefront
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-3.5 w-3.5" aria-hidden>
+              <path d="M7 17L17 7M9 7h8v8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </Link>
-        </div>
-
-        <div className="mt-10 rounded-full border border-black/10 bg-white p-2 shadow-sm">
-          <div className="grid gap-2 sm:grid-cols-5">
-            <Link
-              href="/admin"
-              className={
-                activeTab === "orders"
-                  ? "rounded-full bg-[#171411] px-5 py-3 text-center text-sm font-bold text-white shadow-lg shadow-black/10"
-                  : "rounded-full px-5 py-3 text-center text-sm font-bold text-[#62564c] transition hover:bg-[#fff2e4] hover:text-[#171411]"
-              }
-            >
-              Orders
-            </Link>
-            <Link
-              href="/admin?tab=inventory"
-              className={
-                activeTab === "inventory"
-                  ? "rounded-full bg-[#171411] px-5 py-3 text-center text-sm font-bold text-white shadow-lg shadow-black/10"
-                  : "rounded-full px-5 py-3 text-center text-sm font-bold text-[#62564c] transition hover:bg-[#fff2e4] hover:text-[#171411]"
-              }
-            >
-              Inventory
-            </Link>
-            <Link
-              href="/admin?tab=prices"
-              className={
-                activeTab === "prices"
-                  ? "rounded-full bg-[#171411] px-5 py-3 text-center text-sm font-bold text-white shadow-lg shadow-black/10"
-                  : "rounded-full px-5 py-3 text-center text-sm font-bold text-[#62564c] transition hover:bg-[#fff2e4] hover:text-[#171411]"
-              }
-            >
-              Prices
-            </Link>
-            <Link
-              href="/admin?tab=accounts"
-              className={
-                activeTab === "accounts"
-                  ? "rounded-full bg-[#171411] px-5 py-3 text-center text-sm font-bold text-white shadow-lg shadow-black/10"
-                  : "rounded-full px-5 py-3 text-center text-sm font-bold text-[#62564c] transition hover:bg-[#fff2e4] hover:text-[#171411]"
-              }
-            >
-              Accounts
-            </Link>
-            <Link
-              href="/admin?tab=referrals"
-              className={
-                activeTab === "referrals"
-                  ? "rounded-full bg-[#171411] px-5 py-3 text-center text-sm font-bold text-white shadow-lg shadow-black/10"
-                  : "rounded-full px-5 py-3 text-center text-sm font-bold text-[#62564c] transition hover:bg-[#fff2e4] hover:text-[#171411]"
-              }
-            >
-              Referrals
-            </Link>
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <p className="truncate text-xs text-white/40">{session.user.email}</p>
+            <SignOutButton className="shrink-0 text-xs font-medium text-white/60 transition hover:text-white" />
           </div>
         </div>
+      </aside>
 
-        <div className="mt-8">
-          {activeTab === "orders" ? (
-          <section className="rounded-4xl border border-black/10 bg-white p-6 shadow-xl shadow-orange-950/10">
-            <h2 className="text-3xl font-semibold tracking-tighter">Orders</h2>
-            <div className="mt-6 grid gap-5">
-              {orderRows.length > 0 ? (
-                orderRows.map((order) => {
-                  const items = itemRows.filter(
-                    (item) => item.orderId === order.id,
-                  );
+      <div className="min-w-0">
+        <header className="sticky top-0 z-30 border-b border-ink/10 bg-paper/90 backdrop-blur-xl lg:hidden">
+          <div className="flex items-center justify-between px-5 py-3">
+            <Link href="/">
+              <Image
+                src="/ecw-logo-horizontal.PNG"
+                alt="East Coast Wellness"
+                width={853}
+                height={274}
+                className="h-auto w-32"
+              />
+            </Link>
+            <Link href="/store" className="text-sm font-medium text-muted hover:text-ink">
+              Storefront
+            </Link>
+          </div>
+          <nav
+            aria-label="Admin"
+            className="flex gap-1 overflow-x-auto px-3 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {navItems.map((item) => {
+              const isActive = item.tab === activeTab;
 
-                  return (
-                    <article
-                      key={order.id}
-                      className="rounded-3xl border border-black/10 bg-[#fffaf2] p-5"
-                    >
-                      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-bold text-[#a24b00]">
-                              {order.orderNumber}
-                            </p>
-                            <span
-                              className={
-                                order.orderStatus === "cancelled"
-                                  ? "rounded-full bg-[#fff1f1] px-3 py-1 text-xs font-bold text-[#8a1f1f]"
-                                  : "rounded-full bg-[#e8f5df] px-3 py-1 text-xs font-bold text-[#2f5f1e]"
-                              }
-                            >
-                              {order.orderStatus}
-                            </span>
-                          </div>
-                          <p className="mt-2 text-sm text-[#62564c]">
-                            Created{" "}
-                            <time dateTime={order.createdAt.toISOString()}>
-                              {orderCreatedAtFormatter.format(order.createdAt)}
-                            </time>
-                          </p>
-                          <h3 className="mt-2 text-2xl font-semibold">
-                            {order.customerName}
-                          </h3>
-                          <p className="mt-1 text-sm text-[#62564c]">
-                            {order.customerEmail} · {order.customerPhone}
-                          </p>
-                          {order.referralCode ? (
-                            <p className="mt-1 text-sm font-semibold text-[#a24b00]">
-                              Referral {order.referralCode} ·{" "}
-                              {formatCents(order.referralDiscountCents)} off
-                            </p>
-                          ) : null}
-                        </div>
-                        <p className="text-2xl font-semibold">
-                          {formatCents(order.totalCents)}
-                        </p>
-                      </div>
-
-                      <div className="mt-4 rounded-2xl bg-white p-4 text-sm leading-6 text-[#62564c]">
-                        {order.addressLine1}
-                        {order.addressLine2 ? `, ${order.addressLine2}` : ""}
-                        <br />
-                        {order.city}, {order.state} {order.postalCode}
-                      </div>
-
-                      {shipStationEnabled ? (
-                        <div className="mt-4 rounded-2xl bg-white p-4 text-sm leading-6 text-[#62564c]">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-semibold text-[#171411]">
-                              ShipStation
-                            </span>
-                            <span
-                              className={
-                                order.shipStationSyncStatus === "synced"
-                                  ? "rounded-full bg-[#e8f5df] px-3 py-1 text-xs font-bold text-[#2f5f1e]"
-                                  : order.shipStationSyncStatus === "failed"
-                                    ? "rounded-full bg-[#fff1f1] px-3 py-1 text-xs font-bold text-[#8a1f1f]"
-                                    : "rounded-full bg-[#fff2e4] px-3 py-1 text-xs font-bold text-[#a24b00]"
-                              }
-                            >
-                              {order.shipStationSyncStatus}
-                            </span>
-                          </div>
-                          <p className="mt-2">
-                            External shipment:{" "}
-                            {order.shipStationExternalShipmentId ??
-                              order.orderNumber}
-                          </p>
-                          {order.shipStationShipmentId ? (
-                            <p>Shipment ID: {order.shipStationShipmentId}</p>
-                          ) : null}
-                          {order.shipStationAddressValidationStatus ? (
-                            <p>
-                              Address validation:{" "}
-                              {order.shipStationAddressValidationStatus}
-                            </p>
-                          ) : null}
-                          {order.shipStationAddressValidationMessage ? (
-                            <p>{order.shipStationAddressValidationMessage}</p>
-                          ) : null}
-                          {order.shipStationMatchedAddress ? (
-                            <p className="whitespace-pre-line">
-                              Matched address:{" "}
-                              {order.shipStationMatchedAddress}
-                            </p>
-                          ) : null}
-                          {order.shipStationSyncError ? (
-                            <p className="mt-2 font-semibold text-[#8a1f1f]">
-                              {order.shipStationSyncError}
-                            </p>
-                          ) : null}
-                        </div>
-                      ) : null}
-
-                      <div className="mt-4 divide-y divide-black/10 rounded-2xl bg-white px-4">
-                        {items.map((item) => (
-                          <div
-                            key={item.id}
-                            className="flex justify-between gap-4 py-3 text-sm"
-                          >
-                            <span>
-                              {item.name} {item.amount} · Qty {item.quantity}
-                            </span>
-                            <span className="font-semibold">
-                              {formatCents(item.priceCents * item.quantity)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-
-                      <form
-                        action={updateOrderStatus}
-                        className="mt-4 grid gap-3 md:grid-cols-2"
-                      >
-                        <input type="hidden" name="orderId" value={order.id} />
-                        <label className="grid gap-2 text-sm font-semibold">
-                          Payment Status
-                          <select
-                            name="paymentStatus"
-                            defaultValue={order.paymentStatus}
-                            className="rounded-2xl border border-black/10 bg-white px-4 py-3 font-normal outline-none focus:border-[#ea7500]"
-                          >
-                            <option value="pending">Pending</option>
-                            <option value="paid">Paid</option>
-                          </select>
-                        </label>
-                        <label className="grid gap-2 text-sm font-semibold">
-                          Shipping Status
-                          <select
-                            name="shippingStatus"
-                            defaultValue={order.shippingStatus}
-                            className="rounded-2xl border border-black/10 bg-white px-4 py-3 font-normal outline-none focus:border-[#ea7500]"
-                          >
-                            <option value="pending">Pending</option>
-                            <option value="shipped">Shipped</option>
-                          </select>
-                        </label>
-                        <label className="grid gap-2 text-sm font-semibold">
-                          Carrier
-                          <select
-                            name="carrier"
-                            defaultValue={order.carrier ?? ""}
-                            className="rounded-2xl border border-black/10 bg-white px-4 py-3 font-normal outline-none focus:border-[#ea7500]"
-                          >
-                            <option value="">Not selected</option>
-                            <option value="USPS">USPS</option>
-                            <option value="UPS">UPS</option>
-                          </select>
-                        </label>
-                        <label className="grid gap-2 text-sm font-semibold">
-                          Tracking Number
-                          <input
-                            name="trackingNumber"
-                            defaultValue={order.trackingNumber ?? ""}
-                            className="rounded-2xl border border-black/10 bg-white px-4 py-3 font-normal outline-none focus:border-[#ea7500]"
-                          />
-                        </label>
-                        <button
-                          type="submit"
-                          className="rounded-full bg-[#171411] px-5 py-3 text-sm font-bold text-white md:col-span-2"
-                        >
-                          Update Order
-                        </button>
-                      </form>
-
-                      <div className="mt-4 grid gap-3 rounded-2xl border border-black/10 bg-white p-4 md:grid-cols-2">
-                        <form action={cancelOrder}>
-                          <input type="hidden" name="orderId" value={order.id} />
-                          <button
-                            type="submit"
-                            disabled={order.orderStatus === "cancelled"}
-                            className="w-full rounded-full bg-[#8a1f1f] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#6f1717] disabled:cursor-not-allowed disabled:bg-[#c5b8af]"
-                          >
-                            {order.orderStatus === "cancelled"
-                              ? "Order Cancelled"
-                              : "Cancel and Return Inventory"}
-                          </button>
-                        </form>
-                        <form action={deleteOrder}>
-                          <input type="hidden" name="orderId" value={order.id} />
-                          <button
-                            type="submit"
-                            className="w-full rounded-full border border-[#8a1f1f]/30 bg-white px-5 py-3 text-sm font-bold text-[#8a1f1f] transition hover:bg-[#fff1f1]"
-                          >
-                            Delete Order
-                          </button>
-                        </form>
-                        <p className="text-xs leading-5 text-[#62564c] md:col-span-2">
-                          Cancel keeps the order record and returns inventory
-                          once. Delete removes the order and returns inventory
-                          first only if it has not already been returned.
-                        </p>
-                      </div>
-                    </article>
-                  );
-                })
-              ) : (
-                <p className="rounded-3xl bg-[#fffaf2] p-6 text-center text-[#62564c]">
-                  Orders will appear here after checkout.
-                </p>
-              )}
-            </div>
-          </section>
-          ) : activeTab === "inventory" ? (
-          <section className="rounded-4xl border border-black/10 bg-white p-6 shadow-xl shadow-orange-950/10">
-            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-              <div>
-                <h2 className="text-3xl font-semibold tracking-tighter">
-                  Product inventory
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-[#62564c]">
-                  Stock shown here appears on the storefront and is decremented
-                  when checkout creates an order. Update quantities here as
-                  you receive stock.
-                </p>
-                {shipStationEnabled ? (
-                  <p
-                    className={
-                      shipStationInventoryConfigured
-                        ? "mt-2 text-sm font-semibold text-[#2f5f1e]"
-                        : "mt-2 text-sm font-semibold text-[#8a1f1f]"
-                    }
-                  >
-                    ShipStation inventory sync is{" "}
-                    {shipStationInventoryConfigured ? "configured" : "not configured"}.
-                  </p>
-                ) : null}
-              </div>
-              <div className="flex flex-col gap-2 sm:items-end">
-                <p className="rounded-full bg-[#fff2e4] px-4 py-2 text-sm font-bold text-[#a24b00]">
-                  {products.length} variants
-                </p>
-                {shipStationEnabled ? (
-                  <div className="flex flex-wrap gap-2">
-                    <form action={syncInventoryToShipStation}>
-                      <button
-                        type="submit"
-                        className="rounded-full bg-[#171411] px-4 py-2 text-xs font-bold text-white transition hover:bg-[#302821]"
-                      >
-                        Push to ShipStation
-                      </button>
-                    </form>
-                    <form action={pullInventoryFromShipStation}>
-                      <button
-                        type="submit"
-                        className="rounded-full border border-black/10 bg-white px-4 py-2 text-xs font-bold text-[#171411] transition hover:border-[#ea7500]/40 hover:bg-[#fff8ef]"
-                      >
-                        Pull from ShipStation
-                      </button>
-                    </form>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-            <div className="mt-6 grid gap-4">
-              {products.map((product) => {
-                const quantity = inventoryByProduct.get(product.id) ?? 0;
-                const sync = inventorySyncByProduct.get(product.id);
-
-                return (
-                  <form
-                    key={product.id}
-                    action={updateInventory}
-                    className="grid gap-3 rounded-3xl border border-black/10 bg-[#fffaf2] p-4 transition hover:border-[#ea7500]/30 hover:bg-white sm:grid-cols-[1fr_7rem_auto] sm:items-center"
-                  >
-                    <input type="hidden" name="productId" value={product.id} />
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-semibold">{product.name}</p>
-                        <span
-                          className={
-                            quantity > 0
-                              ? "rounded-full bg-[#e8f5df] px-3 py-1 text-xs font-bold text-[#2f5f1e]"
-                              : "rounded-full bg-[#fff1f1] px-3 py-1 text-xs font-bold text-[#8a1f1f]"
-                          }
-                        >
-                          {quantity > 0 ? `${quantity} in stock` : "Out of stock"}
-                        </span>
-                        {shipStationEnabled ? (
-                          <span
-                            className={
-                              sync?.shipStationInventorySyncStatus === "synced"
-                                ? "rounded-full bg-[#e8f5df] px-3 py-1 text-xs font-bold text-[#2f5f1e]"
-                                : sync?.shipStationInventorySyncStatus === "failed"
-                                  ? "rounded-full bg-[#fff1f1] px-3 py-1 text-xs font-bold text-[#8a1f1f]"
-                                  : "rounded-full bg-white px-3 py-1 text-xs font-bold text-[#62564c]"
-                            }
-                          >
-                            ShipStation{" "}
-                            {sync?.shipStationInventorySyncStatus ?? "pending"}
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className="mt-1 text-sm text-[#62564c]">
-                        {product.amount} · {product.id}
-                      </p>
-                      {shipStationEnabled && sync?.shipStationInventorySyncedAt ? (
-                        <p className="mt-1 text-xs text-[#62564c]">
-                          Last synced{" "}
-                          {sync.shipStationInventorySyncedAt.toLocaleString()}
-                        </p>
-                      ) : null}
-                      {shipStationEnabled && sync?.shipStationInventorySyncError ? (
-                        <p className="mt-1 text-xs font-semibold text-[#8a1f1f]">
-                          {sync.shipStationInventorySyncError}
-                        </p>
-                      ) : null}
-                    </div>
-                    <input
-                      name="quantity"
-                      type="number"
-                      min={0}
-                      defaultValue={quantity}
-                      className="rounded-2xl border border-black/10 bg-white px-4 py-3 text-base outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
-                    />
-                    <button
-                      type="submit"
-                      className="rounded-full bg-[#171411] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#302821]"
-                    >
-                      Save
-                    </button>
-                  </form>
-                );
-              })}
-            </div>
-          </section>
-          ) : activeTab === "prices" ? (
-          <section className="rounded-4xl border border-black/10 bg-white p-6 shadow-xl shadow-orange-950/10">
-            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-              <div>
-                <h2 className="text-3xl font-semibold tracking-tighter">
-                  Product prices
-                </h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-[#62564c]">
-                  Changes apply to the storefront and to checkout immediately.
-                  Items already in a customer&apos;s cart are re-priced at the
-                  new amount, and existing orders keep the price they were
-                  placed at. Use whole dollars or include cents (59.50).
-                </p>
-              </div>
-              <p className="rounded-full bg-[#fff2e4] px-4 py-2 text-sm font-bold text-[#a24b00]">
-                {customPriceProductIds.size} custom{" "}
-                {customPriceProductIds.size === 1 ? "price" : "prices"}
-              </p>
-            </div>
-            <div className="mt-6 grid gap-4">
-              {products.map((product) => {
-                const current = pricedProductById.get(product.id) ?? product;
-                const sellsKits = hasKitPricing(product);
-                const isCustom = customPriceProductIds.has(product.id);
-
-                return (
-                  <form
-                    key={product.id}
-                    action={updateProductPrices}
-                    className="grid gap-4 rounded-3xl border border-black/10 bg-[#fffaf2] p-4 transition hover:border-[#ea7500]/30 hover:bg-white"
-                  >
-                    <input type="hidden" name="productId" value={product.id} />
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold">{product.name}</p>
-                      <span className="text-sm text-[#62564c]">
-                        {product.amount} · {product.id}
-                      </span>
-                      {isCustom ? (
-                        <span className="rounded-full bg-[#fff2e4] px-3 py-1 text-xs font-bold text-[#a24b00]">
-                          Custom price
-                        </span>
-                      ) : null}
-                    </div>
-                    <div
-                      className={
-                        sellsKits
-                          ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
-                          : "grid gap-3 sm:grid-cols-2"
-                      }
-                    >
-                        <label className="grid gap-1 text-xs font-bold uppercase tracking-[0.12em] text-[#62564c]">
-                          Retail vial
-                          <span className="relative">
-                            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base font-normal normal-case text-[#9a8f84]">
-                              $
-                            </span>
-                            <input
-                              name="retailVialPrice"
-                              type="number"
-                              inputMode="decimal"
-                              min="0.01"
-                              step="0.01"
-                              required
-                              defaultValue={current.retailVialPrice}
-                              className="w-full rounded-2xl border border-black/10 bg-white py-3 pl-8 pr-3 text-base font-normal normal-case tracking-normal text-[#171411] outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
-                            />
-                          </span>
-                          <span className="text-[11px] font-semibold normal-case tracking-normal text-[#9a8f84]">
-                            Default {formatPrice(product.retailVialPrice)}
-                          </span>
-                        </label>
-                        <label className="grid gap-1 text-xs font-bold uppercase tracking-[0.12em] text-[#62564c]">
-                          Member vial
-                          <span className="relative">
-                            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base font-normal normal-case text-[#9a8f84]">
-                              $
-                            </span>
-                            <input
-                              name="memberVialPrice"
-                              type="number"
-                              inputMode="decimal"
-                              min="0.01"
-                              step="0.01"
-                              required
-                              defaultValue={current.memberVialPrice}
-                              className="w-full rounded-2xl border border-black/10 bg-white py-3 pl-8 pr-3 text-base font-normal normal-case tracking-normal text-[#171411] outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
-                            />
-                          </span>
-                          <span className="text-[11px] font-semibold normal-case tracking-normal text-[#9a8f84]">
-                            Default {formatPrice(product.memberVialPrice)}
-                          </span>
-                        </label>
-                      {sellsKits ? (
-                        <>
-                        <label className="grid gap-1 text-xs font-bold uppercase tracking-[0.12em] text-[#62564c]">
-                          Retail kit (10)
-                          <span className="relative">
-                            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base font-normal normal-case text-[#9a8f84]">
-                              $
-                            </span>
-                            <input
-                              name="retailKitPrice"
-                              type="number"
-                              inputMode="decimal"
-                              min="0.01"
-                              step="0.01"
-                              required
-                              defaultValue={current.retailKitPrice}
-                              className="w-full rounded-2xl border border-black/10 bg-white py-3 pl-8 pr-3 text-base font-normal normal-case tracking-normal text-[#171411] outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
-                            />
-                          </span>
-                          <span className="text-[11px] font-semibold normal-case tracking-normal text-[#9a8f84]">
-                            Default {formatPrice(product.retailKitPrice!)}
-                          </span>
-                        </label>
-                        <label className="grid gap-1 text-xs font-bold uppercase tracking-[0.12em] text-[#62564c]">
-                          Member kit (10)
-                          <span className="relative">
-                            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base font-normal normal-case text-[#9a8f84]">
-                              $
-                            </span>
-                            <input
-                              name="memberKitPrice"
-                              type="number"
-                              inputMode="decimal"
-                              min="0.01"
-                              step="0.01"
-                              required
-                              defaultValue={current.memberKitPrice}
-                              className="w-full rounded-2xl border border-black/10 bg-white py-3 pl-8 pr-3 text-base font-normal normal-case tracking-normal text-[#171411] outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
-                            />
-                          </span>
-                          <span className="text-[11px] font-semibold normal-case tracking-normal text-[#9a8f84]">
-                            Default {formatPrice(product.memberKitPrice!)}
-                          </span>
-                        </label>
-                        </>
-                      ) : null}
-                    </div>
-                    <div className="flex flex-wrap justify-end gap-2">
-                      {isCustom ? (
-                        <button
-                          type="submit"
-                          formAction={resetProductPrices}
-                          formNoValidate
-                          className="rounded-full border border-black/10 bg-white px-5 py-3 text-sm font-bold text-[#171411] transition hover:border-[#ea7500]/40 hover:bg-[#fff8ef]"
-                        >
-                          Reset to default
-                        </button>
-                      ) : null}
-                      <button
-                        type="submit"
-                        className="rounded-full bg-[#171411] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#302821]"
-                      >
-                        Save prices
-                      </button>
-                    </div>
-                  </form>
-                );
-              })}
-            </div>
-          </section>
-          ) : activeTab === "accounts" ? (
-          <section className="rounded-4xl border border-black/10 bg-white p-6 shadow-xl shadow-orange-950/10">
-            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-              <div>
-                <h2 className="text-3xl font-semibold tracking-tighter">
-                  Account pricing
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-[#62564c]">
-                  Enable special member pricing for individual accounts. Retail
-                  pricing remains the default for everyone else.
-                </p>
-              </div>
-              <p className="rounded-full bg-[#fff2e4] px-4 py-2 text-sm font-bold text-[#a24b00]">
-                {userRows.length} accounts
-              </p>
-            </div>
-            <div className="mt-6 grid gap-4">
-              {userRows.map((user) => (
-                <form
-                  key={user.id}
-                  action={updateMemberPricing}
-                  className="grid gap-4 rounded-3xl border border-black/10 bg-[#fffaf2] p-4 transition hover:border-[#ea7500]/30 hover:bg-white sm:grid-cols-[1fr_auto_auto] sm:items-center"
+              return (
+                <Link
+                  key={item.tab}
+                  href={item.href}
+                  aria-current={isActive ? "page" : undefined}
+                  className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                    isActive ? "bg-ink text-bone" : "text-muted hover:bg-white"
+                  }`}
                 >
-                  <input type="hidden" name="userId" value={user.id} />
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold">{user.name}</p>
-                      <span
-                        className={
-                          user.memberPricingEnabled
-                            ? "rounded-full bg-[#e8f5df] px-3 py-1 text-xs font-bold text-[#2f5f1e]"
-                            : "rounded-full bg-white px-3 py-1 text-xs font-bold text-[#62564c]"
-                        }
-                      >
-                        {user.memberPricingEnabled ? "Member pricing" : "Retail pricing"}
-                      </span>
-                      {user.role === "admin" ? (
-                        <span className="rounded-full bg-[#171411] px-3 py-1 text-xs font-bold text-white">
-                          Admin
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="mt-1 text-sm text-[#62564c]">{user.email}</p>
-                  </div>
-                  <label className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-[#3b332d]">
-                    <input
-                      name="memberPricingEnabled"
-                      type="checkbox"
-                      defaultChecked={user.memberPricingEnabled}
-                      className="h-4 w-4 accent-[#ea7500]"
-                    />
-                    Special member pricing
-                  </label>
-                  <button
-                    type="submit"
-                    className="rounded-full bg-[#171411] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#302821]"
-                  >
-                    Save
-                  </button>
-                </form>
-              ))}
-            </div>
-          </section>
+                  {item.label}
+                  {item.alert && item.badge ? (
+                    <span className="h-1.5 w-1.5 rounded-full bg-copper" aria-label="needs attention" />
+                  ) : null}
+                </Link>
+              );
+            })}
+          </nav>
+        </header>
+
+        <main className="mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:py-12">
+          {activeTab === "orders" ? (
+            <OrdersPanel
+              orderRows={orderRows}
+              itemRows={itemRows}
+              filter={orderFilters.includes(status as OrderFilter) ? (status as OrderFilter) : "all"}
+              query={query}
+              shipStationEnabled={shipStationEnabled}
+              lowStockCount={lowStockCount}
+              outOfStockCount={outOfStockCount}
+            />
+          ) : activeTab === "inventory" ? (
+            <InventoryPanel
+              inventoryRows={inventoryRows}
+              stockFilter={stockFilters.includes(stock as StockFilter) ? (stock as StockFilter) : "all"}
+              query={query}
+              shipStationEnabled={shipStationEnabled}
+              shipStationInventoryConfigured={shipStationInventoryConfigured}
+            />
+          ) : activeTab === "prices" ? (
+            <PricesPanel
+              pricedProductById={pricedProductById}
+              customPriceProductIds={customPriceProductIds}
+              query={query}
+            />
+          ) : activeTab === "accounts" ? (
+            <AccountsPanel userRows={userRows} query={query} />
           ) : (
-          <section className="rounded-4xl border border-black/10 bg-white p-6 shadow-xl shadow-orange-950/10">
-            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-              <div>
-                <h2 className="text-3xl font-semibold tracking-tighter">
-                  Referral partners
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-[#62564c]">
-                  Create partner codes, set percentage discounts, and track
-                  active order sales attributed to each referral partner.
-                </p>
-              </div>
-              <p className="rounded-full bg-[#fff2e4] px-4 py-2 text-sm font-bold text-[#a24b00]">
-                {referralPartnerRows.length} partners
-              </p>
-            </div>
-
-            <form
-              action={createReferralPartner}
-              className="mt-6 grid gap-4 rounded-3xl border border-black/10 bg-[#fffaf2] p-4 lg:grid-cols-[1fr_1fr_10rem_8rem_auto_auto] lg:items-end"
-            >
-              <label className="grid gap-2 text-sm font-semibold">
-                Partner Name
-                <input
-                  name="name"
-                  required
-                  className="rounded-2xl border border-black/10 bg-white px-4 py-3 font-normal outline-none focus:border-[#ea7500]"
-                />
-              </label>
-              <label className="grid gap-2 text-sm font-semibold">
-                Partner Email
-                <input
-                  name="email"
-                  type="email"
-                  className="rounded-2xl border border-black/10 bg-white px-4 py-3 font-normal outline-none focus:border-[#ea7500]"
-                />
-              </label>
-              <label className="grid gap-2 text-sm font-semibold">
-                Code
-                <input
-                  name="code"
-                  required
-                  className="rounded-2xl border border-black/10 bg-white px-4 py-3 font-normal uppercase outline-none focus:border-[#ea7500]"
-                />
-              </label>
-              <label className="grid gap-2 text-sm font-semibold">
-                Discount %
-                <input
-                  name="discountPercent"
-                  type="number"
-                  min={1}
-                  max={100}
-                  required
-                  className="rounded-2xl border border-black/10 bg-white px-4 py-3 font-normal outline-none focus:border-[#ea7500]"
-                />
-              </label>
-              <label className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 text-sm font-semibold">
-                <input
-                  name="excludeReconstitution"
-                  type="checkbox"
-                  className="h-4 w-4 accent-[#ea7500]"
-                />
-                Exclude Reconstitution Solution
-              </label>
-              <button
-                type="submit"
-                className="rounded-full bg-[#171411] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#302821]"
-              >
-                Create
-              </button>
-            </form>
-
-            <div className="mt-6 grid gap-5">
-              {referralPartnerRows.length > 0 ? (
-                referralPartnerRows.map((partner) => {
-                  const codes = referralCodesByPartner.get(partner.id) ?? [];
-                  const partnerTotals = referralTotalsByPartner.get(partner.id);
-
-                  return (
-                    <article
-                      key={partner.id}
-                      className="rounded-3xl border border-black/10 bg-[#fffaf2] p-5"
-                    >
-                      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
-                        <div>
-                          <h3 className="text-2xl font-semibold">
-                            {partner.name}
-                          </h3>
-                          {partner.email ? (
-                            <p className="mt-1 text-sm text-[#62564c]">
-                              {partner.email}
-                            </p>
-                          ) : null}
-                        </div>
-                        <div className="grid gap-2 text-sm sm:grid-cols-3 lg:min-w-md">
-                          <div className="rounded-2xl bg-white p-4">
-                            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#a24b00]">
-                              Orders
-                            </p>
-                            <p className="mt-1 text-xl font-semibold">
-                              {partnerTotals?.orders ?? 0}
-                            </p>
-                          </div>
-                          <div className="rounded-2xl bg-white p-4">
-                            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#a24b00]">
-                              Sales
-                            </p>
-                            <p className="mt-1 text-xl font-semibold">
-                              {formatCents(partnerTotals?.salesCents ?? 0)}
-                            </p>
-                          </div>
-                          <div className="rounded-2xl bg-white p-4">
-                            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#a24b00]">
-                              Discounts
-                            </p>
-                            <p className="mt-1 text-xl font-semibold">
-                              {formatCents(partnerTotals?.discountCents ?? 0)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-5 grid gap-3">
-                        {codes.map((code) => {
-                          const codeTotals = referralTotalsByCode.get(code.id);
-
-                          return (
-                            <form
-                              key={code.id}
-                              action={updateReferralCode}
-                              className="grid gap-3 rounded-2xl bg-white p-4 md:grid-cols-[1fr_8rem_auto_auto_auto] md:items-center"
-                            >
-                              <input
-                                type="hidden"
-                                name="codeId"
-                                value={code.id}
-                              />
-                              <div>
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <p className="font-semibold">{code.code}</p>
-                                  <span
-                                    className={
-                                      code.isActive
-                                        ? "rounded-full bg-[#e8f5df] px-3 py-1 text-xs font-bold text-[#2f5f1e]"
-                                        : "rounded-full bg-[#fff1f1] px-3 py-1 text-xs font-bold text-[#8a1f1f]"
-                                    }
-                                  >
-                                    {code.isActive ? "Active" : "Inactive"}
-                                  </span>
-                                  {code.excludeReconstitution ? (
-                                    <span className="rounded-full bg-[#fff4e3] px-3 py-1 text-xs font-bold text-[#a24b00]">
-                                      Excludes Reconstitution
-                                    </span>
-                                  ) : null}
-                                </div>
-                                <p className="mt-1 text-sm text-[#62564c]">
-                                  {codeTotals?.orders ?? 0} orders ·{" "}
-                                  {formatCents(codeTotals?.salesCents ?? 0)}{" "}
-                                  sales ·{" "}
-                                  {formatCents(codeTotals?.discountCents ?? 0)}{" "}
-                                  discounts
-                                </p>
-                              </div>
-                              <label className="grid gap-2 text-sm font-semibold">
-                                Discount %
-                                <input
-                                  name="discountPercent"
-                                  type="number"
-                                  min={1}
-                                  max={100}
-                                  defaultValue={code.discountPercent}
-                                  className="rounded-2xl border border-black/10 bg-[#fffaf2] px-4 py-3 font-normal outline-none focus:border-[#ea7500]"
-                                />
-                              </label>
-                              <label className="flex items-center gap-3 rounded-2xl bg-[#fffaf2] px-4 py-3 text-sm font-semibold">
-                                <input
-                                  name="isActive"
-                                  type="checkbox"
-                                  defaultChecked={code.isActive}
-                                  className="h-4 w-4 accent-[#ea7500]"
-                                />
-                                Active
-                              </label>
-                              <label className="flex items-center gap-3 rounded-2xl bg-[#fffaf2] px-4 py-3 text-sm font-semibold">
-                                <input
-                                  name="excludeReconstitution"
-                                  type="checkbox"
-                                  defaultChecked={code.excludeReconstitution}
-                                  className="h-4 w-4 accent-[#ea7500]"
-                                />
-                                Exclude Reconstitution
-                              </label>
-                              <button
-                                type="submit"
-                                className="rounded-full bg-[#171411] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#302821]"
-                              >
-                                Save
-                              </button>
-                            </form>
-                          );
-                        })}
-                      </div>
-
-                      <form
-                        action={createReferralCode}
-                        className="mt-4 grid gap-3 rounded-2xl border border-black/10 bg-white p-4 md:grid-cols-[1fr_8rem_auto_auto] md:items-end"
-                      >
-                        <input
-                          type="hidden"
-                          name="partnerId"
-                          value={partner.id}
-                        />
-                        <label className="grid gap-2 text-sm font-semibold">
-                          Add Code
-                          <input
-                            name="code"
-                            required
-                            className="rounded-2xl border border-black/10 bg-[#fffaf2] px-4 py-3 font-normal uppercase outline-none focus:border-[#ea7500]"
-                          />
-                        </label>
-                        <label className="grid gap-2 text-sm font-semibold">
-                          Discount %
-                          <input
-                            name="discountPercent"
-                            type="number"
-                            min={1}
-                            max={100}
-                            required
-                            className="rounded-2xl border border-black/10 bg-[#fffaf2] px-4 py-3 font-normal outline-none focus:border-[#ea7500]"
-                          />
-                        </label>
-                        <label className="flex items-center gap-3 rounded-2xl border border-black/10 bg-[#fffaf2] px-4 py-3 text-sm font-semibold">
-                          <input
-                            name="excludeReconstitution"
-                            type="checkbox"
-                            className="h-4 w-4 accent-[#ea7500]"
-                          />
-                          Exclude Reconstitution
-                        </label>
-                        <button
-                          type="submit"
-                          className="rounded-full border border-black/10 bg-white px-5 py-3 text-sm font-bold text-[#171411] transition hover:border-[#ea7500]/40 hover:bg-[#fff8ef]"
-                        >
-                          Add Code
-                        </button>
-                      </form>
-                    </article>
-                  );
-                })
-              ) : (
-                <p className="rounded-3xl bg-[#fffaf2] p-6 text-center text-[#62564c]">
-                  Referral partners will appear here after you create one.
-                </p>
-              )}
-            </div>
-          </section>
+            <ReferralsPanel
+              partners={referralPartnerRows}
+              codesByPartner={referralCodesByPartner}
+              totalsByPartner={referralTotalsByPartner}
+              totalsByCode={referralTotalsByCode}
+            />
           )}
-        </div>
-      </section>
-    </main>
+          <div className="mt-12 flex justify-end border-t border-ink/8 pt-6 lg:hidden">
+            <SignOutButton />
+          </div>
+        </main>
+      </div>
+    </div>
   );
 }

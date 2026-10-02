@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { FormEvent, useState, useTransition } from "react";
+import { btnPrimary, card, fieldInput, fieldLabel, Notice } from "../ui";
 
 export function RegisterForm() {
   const router = useRouter();
@@ -48,28 +49,29 @@ export function RegisterForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="mx-auto mt-10 grid max-w-xl gap-5 rounded-4xl border border-black/10 bg-white p-6 shadow-xl shadow-orange-950/10"
+      className={`animate-rise mx-auto mt-12 grid max-w-md gap-5 p-6 sm:p-8 ${card}`}
+      style={{ "--delay": "150ms" } as React.CSSProperties}
     >
-      <label className="grid gap-2 text-sm font-semibold text-[#3b332d]">
+      <label className={fieldLabel}>
         Full Name
         <input
           name="name"
           required
           autoComplete="name"
-          className="rounded-2xl border border-black/10 bg-[#fffaf2] px-4 py-3 text-base font-normal outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
+          className={fieldInput}
         />
       </label>
-      <label className="grid gap-2 text-sm font-semibold text-[#3b332d]">
+      <label className={fieldLabel}>
         Email Address
         <input
           name="email"
           type="email"
           required
           autoComplete="email"
-          className="rounded-2xl border border-black/10 bg-[#fffaf2] px-4 py-3 text-base font-normal outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
+          className={fieldInput}
         />
       </label>
-      <label className="grid gap-2 text-sm font-semibold text-[#3b332d]">
+      <label className={fieldLabel}>
         Password
         <input
           name="password"
@@ -77,24 +79,20 @@ export function RegisterForm() {
           minLength={8}
           required
           autoComplete="new-password"
-          className="rounded-2xl border border-black/10 bg-[#fffaf2] px-4 py-3 text-base font-normal outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
+          className={fieldInput}
         />
       </label>
       <button
         type="submit"
         disabled={isPending}
-        className="rounded-full bg-[#171411] px-7 py-4 text-sm font-bold text-white transition hover:bg-[#302821] disabled:cursor-not-allowed disabled:bg-[#8b8178]"
+        className={`${btnPrimary} mt-1 w-full py-4!`}
       >
         {isPending ? "Creating Account..." : "Create Account"}
       </button>
-      {message ? (
-        <p className="rounded-2xl bg-[#fff1f1] p-4 text-sm font-semibold text-[#8a1f1f]">
-          {message}
-        </p>
-      ) : null}
-      <p className="text-center text-sm text-[#62564c]">
+      {message ? <Notice>{message}</Notice> : null}
+      <p className="border-t border-ink/8 pt-5 text-center text-sm text-muted">
         Already have an account?{" "}
-        <Link href="/login" className="font-semibold text-[#a24b00]">
+        <Link href="/login" className="font-medium text-copper underline-offset-4 hover:underline">
           Sign in
         </Link>
       </p>

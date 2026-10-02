@@ -15,16 +15,16 @@ import {
   type ProductPackageType,
 } from "./products";
 
+const LOW_STOCK_THRESHOLD = 5;
+
 type ProductCardProps = {
   group: ProductGroup;
-  theme?: "light" | "dark";
   inventoryByProduct?: InventoryByProductId;
   pricingTier: PricingTier;
 };
 
 export function ProductCard({
   group,
-  theme = "light",
   inventoryByProduct,
   pricingTier,
 }: ProductCardProps) {
@@ -43,7 +43,6 @@ export function ProductCard({
   const packageType = canBuyKit ? selectedPackageType : "vial";
   const packageSize = getProductPackageSize(packageType);
   const selectedPrice = getProductPrice(selected, pricingTier, packageType);
-  const isDark = theme === "dark";
   const showsInventory = inventoryByProduct !== undefined;
   const selectedInventory = showsInventory
     ? (inventoryByProduct[selected.id] ?? 0)
@@ -53,189 +52,147 @@ export function ProductCard({
       ? undefined
       : Math.floor(selectedInventory / packageSize);
   const isOutOfStock = availablePackages !== undefined && availablePackages <= 0;
+  const isLowStock =
+    selectedInventory !== undefined &&
+    !isOutOfStock &&
+    selectedInventory <= LOW_STOCK_THRESHOLD;
+  const hasVariants = group.variants.length > 1;
 
   return (
-    <article
-      className={
-        isDark
-          ? "group overflow-hidden rounded-3xl border border-white/10 bg-white/6 shadow-xl shadow-black/20 transition duration-500 hover:border-[#ea7500]/60 hover:bg-white/9"
-          : "group overflow-hidden rounded-3xl border border-black/10 bg-white shadow-sm transition duration-500 hover:-translate-y-1.5 hover:border-[#ea7500]/30 hover:shadow-2xl hover:shadow-orange-950/15"
-      }
-    >
-      <div
-        className={`overflow-hidden ${
-          isDark
-            ? "bg-white/95 p-2.5 sm:p-5"
-            : "bg-[radial-gradient(circle_at_50%_40%,#ffffff_0%,#fff6e8_75%)] p-2.5 sm:p-5"
-        }`}
-      >
+    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-ink/10 bg-white transition duration-500 hover:-translate-y-1 hover:border-ink/20 hover:shadow-[0_30px_60px_-30px_rgba(60,35,10,0.4)]">
+      <div className="relative aspect-[4/5] overflow-hidden bg-[radial-gradient(circle_at_50%_35%,#ffffff_0%,#f6f1e9_80%)]">
         <Image
           key={selected.id}
           src={selected.image}
           alt={`${group.name} ${selected.amount} research product`}
-          width={640}
-          height={640}
-          className="animate-fade aspect-square w-full rounded-2xl object-contain transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.05] sm:rounded-3xl"
+          width={600}
+          height={750}
+          className="animate-fade h-full w-full object-contain p-6 transition-transform duration-[900ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04] sm:p-8"
         />
-      </div>
-
-      <div className="flex flex-col gap-3 p-3 pb-2 sm:p-6 sm:pb-4">
-        <div className="min-w-0">
-          <p
-            className={
-              isDark
-                ? "text-[10px] font-bold uppercase tracking-[0.16em] text-[#ff9b32] sm:text-xs sm:tracking-[0.2em]"
-                : "text-[10px] font-bold uppercase tracking-[0.16em] text-[#c95f00] sm:text-xs sm:tracking-[0.2em]"
-            }
-          >
-            {group.category}
-          </p>
-          <h2
-            className={
-              isDark
-                ? "mt-1.5 text-base font-semibold leading-tight text-white sm:mt-3 sm:text-2xl"
-                : "mt-1.5 text-base font-semibold leading-tight sm:mt-3 sm:text-2xl"
-            }
-          >
-            {group.name}
-          </h2>
-        </div>
-
-        <label
-          className={
-            isDark
-              ? "block min-w-0 text-xs font-semibold text-white/70 sm:text-sm"
-              : "block min-w-0 text-xs font-semibold text-[#62564c] sm:text-sm"
-          }
-        >
-          Strength
-          <select
-            value={selectedId}
-            onChange={(event) => {
-              setSelectedId(event.target.value);
-              setSelectedPackageType("vial");
-            }}
-            className={
-              isDark
-                ? "mt-1.5 w-full max-w-full rounded-2xl border border-white/15 bg-[#0f0c0a] px-2.5 py-2 text-xs font-medium text-white outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/20 sm:mt-2 sm:px-4 sm:py-3 sm:text-sm"
-                : "mt-1.5 w-full max-w-full rounded-2xl border border-black/10 bg-[#fffaf2] px-2.5 py-2 text-xs font-medium text-[#171411] outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15 sm:mt-2 sm:px-4 sm:py-3 sm:text-sm"
-            }
-          >
-            {group.variants.map((variant) => (
-              <option key={variant.id} value={variant.id}>
-                {variant.amount} —{" "}
-                {formatPrice(getProductPrice(variant, pricingTier, "vial"))}
-                {inventoryByProduct !== undefined &&
-                (inventoryByProduct[variant.id] ?? 0) <= 0
-                  ? " — Out of stock"
-                  : ""}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          {pricingTier === "member" ? (
+        <div className="absolute inset-x-3 top-3 flex flex-wrap items-start justify-between gap-2">
+          {showsInventory ? (
             <span
-              className={
-                isDark
-                  ? "rounded-full bg-[#ff9b32]/15 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#ffbd75]"
-                  : "rounded-full bg-[#e8f5df] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#2f5f1e]"
-              }
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] backdrop-blur ${
+                isOutOfStock
+                  ? "bg-rust-wash/90 text-rust"
+                  : isLowStock
+                    ? "bg-amber-wash/90 text-amber-ink"
+                    : "bg-white/85 text-sage"
+              }`}
             >
+              <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
+              {isOutOfStock
+                ? "Out of stock"
+                : isLowStock
+                  ? `Only ${selectedInventory} left`
+                  : "In stock"}
+            </span>
+          ) : (
+            <span />
+          )}
+          {pricingTier === "member" ? (
+            <span className="rounded-full bg-ink px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-copper-bright">
               Member
             </span>
           ) : null}
-          <p
-            className={
-              isDark
-                ? "rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[#171411] sm:px-4 sm:py-2 sm:text-sm"
-                : "rounded-full bg-[#fff2e4] px-3 py-1.5 text-xs font-bold text-[#bf5700] sm:px-4 sm:py-2 sm:text-sm"
-            }
-          >
-            {formatPrice(selectedPrice)}
-          </p>
-          <span
-            className={
-              isDark
-                ? "text-[11px] font-semibold text-white/55 sm:text-xs"
-                : "text-[11px] font-semibold text-[#74675d] sm:text-xs"
-            }
-          >
-            {getProductPackageLabel(packageType)}
-          </span>
         </div>
       </div>
 
-      {canBuyKit ? (
-        <div className="px-3 pb-2 sm:px-6 sm:pb-4">
+      <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-copper sm:text-xs">
+              {group.category}
+            </p>
+            <h2 className="mt-1.5 font-display text-xl leading-tight text-ink sm:text-[1.7rem]">
+              {group.name}
+            </h2>
+          </div>
+          <div className="shrink-0 text-right">
+            <p className="text-base font-medium tabular-nums text-ink sm:text-lg">
+              {formatPrice(selectedPrice)}
+            </p>
+            <p className="text-[11px] uppercase tracking-[0.14em] text-faint sm:text-xs">
+              {getProductPackageLabel(packageType)}
+            </p>
+          </div>
+        </div>
+
+        {hasVariants ? (
+          <fieldset className="min-w-0">
+            <legend className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-muted">
+              Strength
+            </legend>
+            <div className="flex flex-wrap gap-1.5">
+              {group.variants.map((variant) => {
+                const isSelected = variant.id === selected.id;
+                const variantOut =
+                  inventoryByProduct !== undefined &&
+                  (inventoryByProduct[variant.id] ?? 0) <= 0;
+
+                return (
+                  <button
+                    key={variant.id}
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() => {
+                      setSelectedId(variant.id);
+                      setSelectedPackageType("vial");
+                    }}
+                    className={`rounded-lg border px-2.5 py-1.5 text-left text-xs font-medium transition duration-300 sm:px-3 ${
+                      isSelected
+                        ? "border-ink bg-ink text-bone"
+                        : "border-ink/12 bg-bone text-ink-soft hover:border-ink/35"
+                    } ${variantOut && !isSelected ? "text-faint line-through decoration-faint/60" : ""}`}
+                  >
+                    {variant.amount}
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+        ) : (
+          <p className="text-xs text-muted sm:text-sm">{selected.amount}</p>
+        )}
+
+        {canBuyKit ? (
           <div
-            className={
-              isDark
-                ? "grid grid-cols-2 gap-2 rounded-2xl bg-white/6 p-1"
-                : "grid grid-cols-2 gap-2 rounded-2xl bg-[#fffaf2] p-1"
-            }
+            role="group"
+            aria-label="Package size"
+            className="grid grid-cols-2 gap-1 rounded-xl bg-paper p-1"
           >
             {(["vial", "kit"] as const).map((option) => (
               <button
                 key={option}
                 type="button"
+                aria-pressed={packageType === option}
                 onClick={() => setSelectedPackageType(option)}
                 className={
                   packageType === option
-                    ? "rounded-xl bg-[#ea7500] px-2 py-2 text-xs font-bold text-white shadow-sm shadow-orange-900/20 transition duration-300"
-                    : isDark
-                      ? "rounded-xl px-2 py-2 text-xs font-bold text-white/65 transition duration-300 hover:bg-white/8 hover:text-white"
-                      : "rounded-xl px-2 py-2 text-xs font-bold text-[#62564c] transition duration-300 hover:bg-white hover:text-[#171411]"
+                    ? "rounded-lg bg-white px-2 py-2 text-xs font-medium text-ink shadow-[0_1px_2px_rgba(22,19,15,0.12)] transition duration-300"
+                    : "rounded-lg px-2 py-2 text-xs font-medium text-muted transition duration-300 hover:text-ink"
                 }
               >
                 {getProductPackageLabel(option)}
               </button>
             ))}
           </div>
-        </div>
-      ) : null}
+        ) : null}
 
-      {showsInventory && !isOutOfStock ? (
-        <div className="px-3 pb-2 sm:px-6 sm:pb-4">
-          <span
-            className={
-              isDark
-                ? "inline-flex rounded-full bg-emerald-400/15 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-100 sm:px-3 sm:text-xs sm:tracking-[0.16em]"
-                : "inline-flex rounded-full bg-[#e8f5df] px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#2f5f1e] sm:px-3 sm:text-xs sm:tracking-[0.16em]"
-            }
-          >
-            {`${selectedInventory} ${selectedInventory === 1 ? "vial" : "vials"} left`}
-            {packageType === "kit" && availablePackages !== undefined
-              ? ` · ${availablePackages} ${availablePackages === 1 ? "kit" : "kits"} available`
-              : ""}
-          </span>
+        <div className="mt-auto grid gap-2 border-t border-ink/8 pt-4">
+          {packageType === "kit" && availablePackages !== undefined && !isOutOfStock ? (
+            <span className="text-xs uppercase tracking-[0.14em] text-faint">
+              {`${availablePackages} ${availablePackages === 1 ? "kit" : "kits"} available`}
+            </span>
+          ) : null}
+          <AddToCartButton
+            key={`${selected.id}-${packageType}`}
+            product={selected}
+            pricingTier={pricingTier}
+            packageType={packageType}
+            maxQuantity={availablePackages}
+          />
         </div>
-      ) : null}
-
-      <div
-        className={
-          isDark
-            ? "flex items-center justify-between border-t border-white/10 p-3 sm:p-6 sm:pt-5"
-            : "flex items-center justify-between border-t border-black/10 p-3 sm:p-6 sm:pt-5"
-        }
-      >
-        <span
-          className={
-            isDark
-              ? "hidden text-sm text-white/55 sm:inline"
-              : "hidden text-sm text-[#74675d] sm:inline"
-          }
-        >
-          {isDark ? "For research use only" : "Research use only"}
-        </span>
-        <AddToCartButton
-          key={`${selected.id}-${packageType}`}
-          product={selected}
-          pricingTier={pricingTier}
-          packageType={packageType}
-          maxQuantity={availablePackages}
-        />
       </div>
     </article>
   );
