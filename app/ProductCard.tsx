@@ -56,7 +56,6 @@ export function ProductCard({
     selectedInventory !== undefined &&
     !isOutOfStock &&
     selectedInventory <= LOW_STOCK_THRESHOLD;
-  const hasVariants = group.variants.length > 1;
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-ink/10 bg-white transition duration-500 hover:-translate-y-1 hover:border-ink/20 hover:shadow-[0_30px_60px_-30px_rgba(60,35,10,0.4)]">
@@ -118,42 +117,38 @@ export function ProductCard({
           </div>
         </div>
 
-        {hasVariants ? (
-          <fieldset className="min-w-0">
-            <legend className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-muted">
-              Strength
-            </legend>
-            <div className="flex flex-wrap gap-1.5">
-              {group.variants.map((variant) => {
-                const isSelected = variant.id === selected.id;
-                const variantOut =
-                  inventoryByProduct !== undefined &&
-                  (inventoryByProduct[variant.id] ?? 0) <= 0;
+        <fieldset className="min-w-0">
+          <legend className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-muted">
+            Strength
+          </legend>
+          <div className="flex flex-wrap gap-1.5">
+            {group.variants.map((variant) => {
+              const isSelected = variant.id === selected.id;
+              const variantOut =
+                inventoryByProduct !== undefined &&
+                (inventoryByProduct[variant.id] ?? 0) <= 0;
 
-                return (
-                  <button
-                    key={variant.id}
-                    type="button"
-                    aria-pressed={isSelected}
-                    onClick={() => {
-                      setSelectedId(variant.id);
-                      setSelectedPackageType("vial");
-                    }}
-                    className={`rounded-lg border px-2.5 py-1.5 text-left text-xs font-medium transition duration-300 sm:px-3 ${
-                      isSelected
-                        ? "border-ink bg-ink text-bone"
-                        : "border-ink/12 bg-bone text-ink-soft hover:border-ink/35"
-                    } ${variantOut && !isSelected ? "text-faint line-through decoration-faint/60" : ""}`}
-                  >
-                    {variant.amount}
-                  </button>
-                );
-              })}
-            </div>
-          </fieldset>
-        ) : (
-          <p className="text-xs text-muted sm:text-sm">{selected.amount}</p>
-        )}
+              return (
+                <button
+                  key={variant.id}
+                  type="button"
+                  aria-pressed={isSelected}
+                  onClick={() => {
+                    setSelectedId(variant.id);
+                    setSelectedPackageType("vial");
+                  }}
+                  className={`rounded-lg border px-2.5 py-1.5 text-left text-xs font-medium transition duration-300 sm:px-3 ${
+                    isSelected
+                      ? "border-ink bg-ink text-bone"
+                      : "border-ink/12 bg-bone text-ink-soft hover:border-ink/35"
+                  } ${variantOut && !isSelected ? "text-faint line-through decoration-faint/60" : ""}`}
+                >
+                  {variant.amount}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
 
         {canBuyKit ? (
           <div
@@ -191,6 +186,7 @@ export function ProductCard({
             pricingTier={pricingTier}
             packageType={packageType}
             maxQuantity={availablePackages}
+            maxInventory={selectedInventory}
           />
         </div>
       </div>

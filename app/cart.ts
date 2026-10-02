@@ -62,25 +62,42 @@ export function addProductToCart(
   pricingTier: PricingTier,
   packageType: ProductPackageType,
   maxQuantity?: number,
+  quantity = 1,
+  maxInventory?: number,
 ) {
+  if (!Number.isSafeInteger(quantity) || quantity <= 0) {
+    return false;
+  }
+
   const cart = readCart();
   const cartItemId = getCartItemId(product.id, packageType);
   const existingItem = cart.find((item) => item.id === cartItemId);
   const packageSize = getProductPackageSize(packageType);
   const price = getProductPrice(product, pricingTier, packageType);
+  const nextQuantity = (existingItem?.quantity ?? 0) + quantity;
 
-  if (existingItem) {
-    if (maxQuantity !== undefined && existingItem.quantity >= maxQuantity) {
-      return false;
-    }
-
-    existingItem.quantity += 1;
-    saveCart(cart);
-    return true;
+  if (maxQuantity !== undefined && nextQuantity > maxQuantity) {
+    return false;
   }
 
-  if (maxQuantity !== undefined && maxQuantity <= 0) {
-    return false;
+  if (maxInventory !== undefined) {
+    const reservedVials = cart.reduce(
+      (total, item) =>
+        item.productId === product.id
+          ? total + item.quantity * item.packageSize
+          : total,
+      0,
+    );
+
+    if (reservedVials + quantity * packageSize > maxInventory) {
+      return false;
+    }
+  }
+
+  if (existingItem) {
+    existingItem.quantity = nextQuantity;
+    saveCart(cart);
+    return true;
   }
 
   saveCart([
@@ -92,7 +109,7 @@ export function addProductToCart(
       packageType,
       packageSize,
       price,
-      quantity: 1,
+      quantity,
     },
   ]);
   return true;
