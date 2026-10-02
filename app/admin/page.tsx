@@ -12,8 +12,9 @@ import {
   referralPartners,
   users,
 } from "@/db/schema";
-import { products } from "@/app/products";
+import { formatPrice, hasKitPricing, products } from "@/app/products";
 import { formatCents } from "@/lib/money";
+import { getPriceOverrides, getProductsWithPrices } from "@/lib/pricing";
 import { isShipStationEnabled } from "@/lib/shipstation";
 import {
   cancelOrder,
@@ -24,7 +25,9 @@ import {
   syncInventoryToShipStation,
   updateInventory,
   updateMemberPricing,
+  resetProductPrices,
   updateOrderStatus,
+  updateProductPrices,
   updateReferralCode,
 } from "./actions";
 
@@ -55,7 +58,10 @@ export default async function Page({ searchParams }: PageProps) {
   const session = await getAuthSession();
   const { tab } = await searchParams;
   const activeTab =
-    tab === "inventory" || tab === "accounts" || tab === "referrals"
+    tab === "inventory" ||
+    tab === "prices" ||
+    tab === "accounts" ||
+    tab === "referrals"
       ? tab
       : "orders";
 
@@ -85,6 +91,8 @@ export default async function Page({ searchParams }: PageProps) {
     userRows,
     referralPartnerRows,
     referralCodeRows,
+    priceOverrideRows,
+    pricedProducts,
   ] = await Promise.all([
     db.select().from(productInventory),
     db.select().from(orders).orderBy(desc(orders.createdAt)),
@@ -92,7 +100,15 @@ export default async function Page({ searchParams }: PageProps) {
     db.select().from(users).orderBy(desc(users.createdAt)),
     db.select().from(referralPartners).orderBy(desc(referralPartners.createdAt)),
     db.select().from(referralCodes).orderBy(desc(referralCodes.createdAt)),
+    getPriceOverrides(),
+    getProductsWithPrices(),
   ]);
+  const pricedProductById = new Map(
+    pricedProducts.map((product) => [product.id, product]),
+  );
+  const customPriceProductIds = new Set(
+    priceOverrideRows.map((row) => row.productId),
+  );
   const inventoryByProduct = new Map(
     inventoryRows.map((row) => [row.productId, row.quantity]),
   );
@@ -184,7 +200,7 @@ export default async function Page({ searchParams }: PageProps) {
         </div>
 
         <div className="mt-10 rounded-full border border-black/10 bg-white p-2 shadow-sm">
-          <div className="grid gap-2 sm:grid-cols-4">
+          <div className="grid gap-2 sm:grid-cols-5">
             <Link
               href="/admin"
               className={
@@ -204,6 +220,16 @@ export default async function Page({ searchParams }: PageProps) {
               }
             >
               Inventory
+            </Link>
+            <Link
+              href="/admin?tab=prices"
+              className={
+                activeTab === "prices"
+                  ? "rounded-full bg-[#171411] px-5 py-3 text-center text-sm font-bold text-white shadow-lg shadow-black/10"
+                  : "rounded-full px-5 py-3 text-center text-sm font-bold text-[#62564c] transition hover:bg-[#fff2e4] hover:text-[#171411]"
+              }
+            >
+              Prices
             </Link>
             <Link
               href="/admin?tab=accounts"
@@ -567,6 +593,168 @@ export default async function Page({ searchParams }: PageProps) {
                     >
                       Save
                     </button>
+                  </form>
+                );
+              })}
+            </div>
+          </section>
+          ) : activeTab === "prices" ? (
+          <section className="rounded-4xl border border-black/10 bg-white p-6 shadow-xl shadow-orange-950/10">
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+              <div>
+                <h2 className="text-3xl font-semibold tracking-tighter">
+                  Product prices
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-[#62564c]">
+                  Changes apply to the storefront and to checkout immediately.
+                  Items already in a customer&apos;s cart are re-priced at the
+                  new amount, and existing orders keep the price they were
+                  placed at. Use whole dollars or include cents (59.50).
+                </p>
+              </div>
+              <p className="rounded-full bg-[#fff2e4] px-4 py-2 text-sm font-bold text-[#a24b00]">
+                {customPriceProductIds.size} custom{" "}
+                {customPriceProductIds.size === 1 ? "price" : "prices"}
+              </p>
+            </div>
+            <div className="mt-6 grid gap-4">
+              {products.map((product) => {
+                const current = pricedProductById.get(product.id) ?? product;
+                const sellsKits = hasKitPricing(product);
+                const isCustom = customPriceProductIds.has(product.id);
+
+                return (
+                  <form
+                    key={product.id}
+                    action={updateProductPrices}
+                    className="grid gap-4 rounded-3xl border border-black/10 bg-[#fffaf2] p-4 transition hover:border-[#ea7500]/30 hover:bg-white"
+                  >
+                    <input type="hidden" name="productId" value={product.id} />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold">{product.name}</p>
+                      <span className="text-sm text-[#62564c]">
+                        {product.amount} · {product.id}
+                      </span>
+                      {isCustom ? (
+                        <span className="rounded-full bg-[#fff2e4] px-3 py-1 text-xs font-bold text-[#a24b00]">
+                          Custom price
+                        </span>
+                      ) : null}
+                    </div>
+                    <div
+                      className={
+                        sellsKits
+                          ? "grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+                          : "grid gap-3 sm:grid-cols-2"
+                      }
+                    >
+                        <label className="grid gap-1 text-xs font-bold uppercase tracking-[0.12em] text-[#62564c]">
+                          Retail vial
+                          <span className="relative">
+                            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base font-normal normal-case text-[#9a8f84]">
+                              $
+                            </span>
+                            <input
+                              name="retailVialPrice"
+                              type="number"
+                              inputMode="decimal"
+                              min="0.01"
+                              step="0.01"
+                              required
+                              defaultValue={current.retailVialPrice}
+                              className="w-full rounded-2xl border border-black/10 bg-white py-3 pl-8 pr-3 text-base font-normal normal-case tracking-normal text-[#171411] outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
+                            />
+                          </span>
+                          <span className="text-[11px] font-semibold normal-case tracking-normal text-[#9a8f84]">
+                            Default {formatPrice(product.retailVialPrice)}
+                          </span>
+                        </label>
+                        <label className="grid gap-1 text-xs font-bold uppercase tracking-[0.12em] text-[#62564c]">
+                          Member vial
+                          <span className="relative">
+                            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base font-normal normal-case text-[#9a8f84]">
+                              $
+                            </span>
+                            <input
+                              name="memberVialPrice"
+                              type="number"
+                              inputMode="decimal"
+                              min="0.01"
+                              step="0.01"
+                              required
+                              defaultValue={current.memberVialPrice}
+                              className="w-full rounded-2xl border border-black/10 bg-white py-3 pl-8 pr-3 text-base font-normal normal-case tracking-normal text-[#171411] outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
+                            />
+                          </span>
+                          <span className="text-[11px] font-semibold normal-case tracking-normal text-[#9a8f84]">
+                            Default {formatPrice(product.memberVialPrice)}
+                          </span>
+                        </label>
+                      {sellsKits ? (
+                        <>
+                        <label className="grid gap-1 text-xs font-bold uppercase tracking-[0.12em] text-[#62564c]">
+                          Retail kit (10)
+                          <span className="relative">
+                            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base font-normal normal-case text-[#9a8f84]">
+                              $
+                            </span>
+                            <input
+                              name="retailKitPrice"
+                              type="number"
+                              inputMode="decimal"
+                              min="0.01"
+                              step="0.01"
+                              required
+                              defaultValue={current.retailKitPrice}
+                              className="w-full rounded-2xl border border-black/10 bg-white py-3 pl-8 pr-3 text-base font-normal normal-case tracking-normal text-[#171411] outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
+                            />
+                          </span>
+                          <span className="text-[11px] font-semibold normal-case tracking-normal text-[#9a8f84]">
+                            Default {formatPrice(product.retailKitPrice!)}
+                          </span>
+                        </label>
+                        <label className="grid gap-1 text-xs font-bold uppercase tracking-[0.12em] text-[#62564c]">
+                          Member kit (10)
+                          <span className="relative">
+                            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base font-normal normal-case text-[#9a8f84]">
+                              $
+                            </span>
+                            <input
+                              name="memberKitPrice"
+                              type="number"
+                              inputMode="decimal"
+                              min="0.01"
+                              step="0.01"
+                              required
+                              defaultValue={current.memberKitPrice}
+                              className="w-full rounded-2xl border border-black/10 bg-white py-3 pl-8 pr-3 text-base font-normal normal-case tracking-normal text-[#171411] outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
+                            />
+                          </span>
+                          <span className="text-[11px] font-semibold normal-case tracking-normal text-[#9a8f84]">
+                            Default {formatPrice(product.memberKitPrice!)}
+                          </span>
+                        </label>
+                        </>
+                      ) : null}
+                    </div>
+                    <div className="flex flex-wrap justify-end gap-2">
+                      {isCustom ? (
+                        <button
+                          type="submit"
+                          formAction={resetProductPrices}
+                          formNoValidate
+                          className="rounded-full border border-black/10 bg-white px-5 py-3 text-sm font-bold text-[#171411] transition hover:border-[#ea7500]/40 hover:bg-[#fff8ef]"
+                        >
+                          Reset to default
+                        </button>
+                      ) : null}
+                      <button
+                        type="submit"
+                        className="rounded-full bg-[#171411] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#302821]"
+                      >
+                        Save prices
+                      </button>
+                    </div>
                   </form>
                 );
               })}

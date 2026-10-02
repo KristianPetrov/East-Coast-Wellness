@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { getCurrentPricingTier } from "@/lib/member-pricing";
+import { getProductsWithPrices } from "@/lib/pricing";
 import { siteConfig } from "@/lib/seo";
 import { FloatingCart } from "./FloatingCart";
 import "./globals.css";
@@ -89,7 +90,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const pricingTier = await getCurrentPricingTier();
+  const [pricingTier, catalog] = await Promise.all([
+    getCurrentPricingTier(),
+    getProductsWithPrices(),
+  ]);
 
   return (
     <html
@@ -101,7 +105,7 @@ export default async function RootLayout({
           <style>{`[data-reveal]{opacity:1!important;transform:none!important}`}</style>
         </noscript>
         {children}
-        <FloatingCart pricingTier={pricingTier} />
+        <FloatingCart pricingTier={pricingTier} catalog={catalog} />
       </body>
     </html>
   );

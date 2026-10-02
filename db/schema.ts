@@ -57,6 +57,19 @@ export const productInventory = pgTable("product_inventory", {
     .defaultNow(),
 });
 
+// Admin-set price overrides. A null column falls back to the default price
+// defined in app/products.ts. Amounts are stored in cents.
+export const productPrices = pgTable("product_prices", {
+  productId: text("product_id").primaryKey(),
+  retailVialPriceCents: integer("retail_vial_price_cents"),
+  memberVialPriceCents: integer("member_vial_price_cents"),
+  retailKitPriceCents: integer("retail_kit_price_cents"),
+  memberKitPriceCents: integer("member_kit_price_cents"),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const referralPartners = pgTable("referral_partners", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),

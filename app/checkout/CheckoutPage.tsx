@@ -18,6 +18,7 @@ import {
   formatPrice,
   getProductPackageLabel,
   type PricingTier,
+  type Product,
 } from "../products";
 import { createOrder, type CheckoutResult } from "./actions";
 import {
@@ -82,9 +83,10 @@ const usStates = [
 
 type CheckoutPageProps = {
   pricingTier: PricingTier;
+  catalog: Product[];
 };
 
-export function CheckoutPage({ pricingTier }: CheckoutPageProps) {
+export function CheckoutPage({ pricingTier, catalog }: CheckoutPageProps) {
   const router = useRouter();
   const [items, setItems] = useState<CartItem[]>([]);
   const [shippingMethod, setShippingMethod] =
@@ -144,7 +146,7 @@ export function CheckoutPage({ pricingTier }: CheckoutPageProps) {
   }
 
   const count = getCartCount(items);
-  const subtotal = getCartTotal(items, pricingTier);
+  const subtotal = getCartTotal(items, pricingTier, catalog);
   const shippingPrice = shippingOptions[shippingMethod].priceCents / 100;
   const total = subtotal + shippingPrice;
 
@@ -369,7 +371,7 @@ export function CheckoutPage({ pricingTier }: CheckoutPageProps) {
                   </div>
                   <p className="font-semibold">
                     {formatPrice(
-                      getCartItemPrice(item, pricingTier) * item.quantity,
+                      getCartItemPrice(item, pricingTier, catalog) * item.quantity,
                     )}
                   </p>
                 </div>

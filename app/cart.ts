@@ -138,7 +138,24 @@ export function clearCart() {
   saveCart([]);
 }
 
-export function getCartItemPrice(item: CartItem, pricingTier?: PricingTier) {
+/**
+ * Cart items are snapshotted in localStorage when added, so prices must be
+ * re-read from the current catalog (which includes admin price changes).
+ * The snapshot is only a fallback for products no longer in the catalog.
+ */
+export function getCartItemPrice(
+  item: CartItem,
+  pricingTier?: PricingTier,
+  catalog?: Product[],
+) {
+  const currentProduct = catalog?.find(
+    (product) => product.id === item.productId,
+  );
+
+  if (currentProduct && pricingTier !== undefined) {
+    return getProductPrice(currentProduct, pricingTier, item.packageType);
+  }
+
   if (
     pricingTier === undefined ||
     item.retailVialPrice === undefined ||
@@ -150,9 +167,14 @@ export function getCartItemPrice(item: CartItem, pricingTier?: PricingTier) {
   return getProductPrice(item, pricingTier, item.packageType);
 }
 
-export function getCartTotal(items: CartItem[], pricingTier?: PricingTier) {
+export function getCartTotal(
+  items: CartItem[],
+  pricingTier?: PricingTier,
+  catalog?: Product[],
+) {
   return items.reduce(
-    (total, item) => total + getCartItemPrice(item, pricingTier) * item.quantity,
+    (total, item) =>
+      total + getCartItemPrice(item, pricingTier, catalog) * item.quantity,
     0,
   );
 }

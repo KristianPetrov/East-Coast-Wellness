@@ -7,6 +7,7 @@ import {
   orderItems,
   orders,
   productInventory,
+  productPrices,
   referralCodes,
   referralPartners,
   users,
@@ -15,7 +16,7 @@ import {
   type ShippingStatus,
 } from "@/db/schema";
 import { getAuthSession } from "@/auth";
-import { products } from "@/app/products";
+import { hasKitPricing, products } from "@/app/products";
 import { sendOrderStatusUpdatedEmail } from "@/lib/email";
 import {
   getShipStationInventoryLevels,
@@ -234,6 +235,95 @@ export async function pullInventoryFromShipStation() {
   revalidatePath("/admin");
   revalidatePath("/");
   revalidatePath("/store");
+}
+
+const maxPriceCents = 10_000_000;
+
+function readPriceCents(formData: FormData, field: string, label: string) {
+  const value = String(formData.get(field) ?? "").trim().replace(/^\$/, "");
+
+  if (!/^\d+(\.\d{1,2})?$/.test(value)) {
+    throw new Error(`${label} must be a dollar amount like 60 or 59.50.`);
+  }
+
+  const cents = Math.round(Number(value) * 100);
+
+  if (cents <= 0 || cents > maxPriceCents) {
+    throw new Error(`${label} must be greater than $0 and at most $100,000.`);
+  }
+
+  return cents;
+}
+
+function revalidateStorefront() {
+  revalidatePath("/admin");
+  revalidatePath("/");
+  revalidatePath("/store");
+  revalidatePath("/checkout");
+}
+
+export async function updateProductPrices(formData: FormData) {
+  await requireAdmin();
+
+  const productId = String(formData.get("productId") ?? "");
+  const product = products.find((candidate) => candidate.id === productId);
+
+  if (!product) {
+    throw new Error("Product was not found.");
+  }
+
+  const retailVial = readPriceCents(formData, "retailVialPrice", "Retail vial price");
+  const memberVial = readPriceCents(formData, "memberVialPrice", "Member vial price");
+  const sellsKits = hasKitPricing(product);
+  const retailKit = sellsKits
+    ? readPriceCents(formData, "retailKitPrice", "Retail kit price")
+    : null;
+  const memberKit = sellsKits
+    ? readPriceCents(formData, "memberKitPrice", "Member kit price")
+    : null;
+
+  // Store a value only when it differs from the default in app/products.ts,
+  // so untouched fields keep following the defaults.
+  const overrideIfChanged = (cents: number | null, defaultDollars?: number) =>
+    cents === null ||
+    defaultDollars === undefined ||
+    cents === Math.round(defaultDollars * 100)
+      ? null
+      : cents;
+  const values = {
+    retailVialPriceCents: overrideIfChanged(retailVial, product.retailVialPrice),
+    memberVialPriceCents: overrideIfChanged(memberVial, product.memberVialPrice),
+    retailKitPriceCents: overrideIfChanged(retailKit, product.retailKitPrice),
+    memberKitPriceCents: overrideIfChanged(memberKit, product.memberKitPrice),
+  };
+
+  if (Object.values(values).every((value) => value === null)) {
+    await db.delete(productPrices).where(eq(productPrices.productId, productId));
+  } else {
+    await db
+      .insert(productPrices)
+      .values({ productId, ...values, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: productPrices.productId,
+        set: { ...values, updatedAt: new Date() },
+      });
+  }
+
+  revalidateStorefront();
+}
+
+export async function resetProductPrices(formData: FormData) {
+  await requireAdmin();
+
+  const productId = String(formData.get("productId") ?? "");
+
+  if (!productId) {
+    throw new Error("Product is required.");
+  }
+
+  await db.delete(productPrices).where(eq(productPrices.productId, productId));
+
+  revalidateStorefront();
 }
 
 export async function updateMemberPricing(formData: FormData) {

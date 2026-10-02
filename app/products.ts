@@ -424,8 +424,6 @@ export const products: Product[] = [
   },
 ];
 
-export const productGroups = groupProducts(products);
-
 const featuredProductNames = [
   "BPC-157",
   "NAD+",
@@ -437,15 +435,22 @@ const featuredProductNames = [
   "Tesamorelin",
 ];
 
-export const featuredProductGroups = featuredProductNames
-  .map((name) => productGroups.find((group) => group.name === name))
-  .filter((group): group is ProductGroup => group !== undefined);
+export function getFeaturedProductGroups(groups: ProductGroup[]) {
+  return featuredProductNames
+    .map((name) => groups.find((group) => group.name === name))
+    .filter((group): group is ProductGroup => group !== undefined);
+}
 
 export function formatPrice(price: number) {
+  // Whole-dollar prices stay compact ("$60"); admin-set prices with cents
+  // show both decimals ("$59.50") so the displayed price is never rounded.
+  const fractionDigits = Number.isInteger(price) ? 0 : 2;
+
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    maximumFractionDigits: 0,
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
   }).format(price);
 }
 

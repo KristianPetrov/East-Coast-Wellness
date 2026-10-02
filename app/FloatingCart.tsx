@@ -19,13 +19,15 @@ import {
   formatPrice,
   getProductPackageLabel,
   type PricingTier,
+  type Product,
 } from "./products";
 
 type FloatingCartProps = {
   pricingTier: PricingTier;
+  catalog: Product[];
 };
 
-export function FloatingCart({ pricingTier }: FloatingCartProps) {
+export function FloatingCart({ pricingTier, catalog }: FloatingCartProps) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -43,7 +45,7 @@ export function FloatingCart({ pricingTier }: FloatingCartProps) {
   }, []);
 
   const count = getCartCount(items);
-  const total = getCartTotal(items, pricingTier);
+  const total = getCartTotal(items, pricingTier, catalog);
   const hasItems = items.length > 0;
 
   // Re-key the summary line whenever the count changes so it pops.
@@ -120,7 +122,7 @@ export function FloatingCart({ pricingTier }: FloatingCartProps) {
                           {getProductPackageLabel(item.packageType)}
                         </p>
                         <p className="mt-1 text-xs font-bold text-[#ff9b32]">
-                          {formatPrice(getCartItemPrice(item, pricingTier))} each
+                          {formatPrice(getCartItemPrice(item, pricingTier, catalog))} each
                         </p>
                       </div>
                       <button
@@ -166,7 +168,7 @@ export function FloatingCart({ pricingTier }: FloatingCartProps) {
                       </div>
                       <p className="text-right text-sm font-semibold">
                         {formatPrice(
-                          getCartItemPrice(item, pricingTier) * item.quantity,
+                          getCartItemPrice(item, pricingTier, catalog) * item.quantity,
                         )}
                       </p>
                     </div>

@@ -50,6 +50,13 @@
       "when": 1780956318575,
       "tag": "0006_nervous_jack_murdock",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790971302393,
+      "tag": "0007_magical_butterfly",
+      "breakpoints": true
     }
   ]
 }

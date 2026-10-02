@@ -3,11 +3,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { getInventoryByProductId } from "@/lib/inventory";
 import { getCurrentPricingTier } from "@/lib/member-pricing";
+import { getProductsWithPrices } from "@/lib/pricing";
 import { absoluteUrl, siteConfig } from "@/lib/seo";
 import { FeaturedProductsSlideshow } from "./FeaturedProductsSlideshow";
 import { Logo } from "./Logo";
 import { MobileNav } from "./MobileNav";
-import { featuredProductGroups } from "./products";
+import { getFeaturedProductGroups, groupProducts } from "./products";
 import { Reveal } from "./Reveal";
 import { StickyHeader } from "./StickyHeader";
 
@@ -72,10 +73,12 @@ function ArrowIcon() {
 }
 
 export default async function Home() {
-  const [inventoryByProduct, pricingTier] = await Promise.all([
+  const [inventoryByProduct, pricingTier, catalog] = await Promise.all([
     getInventoryByProductId(),
     getCurrentPricingTier(),
+    getProductsWithPrices(),
   ]);
+  const featuredProductGroups = getFeaturedProductGroups(groupProducts(catalog));
   const structuredData = [
     {
       "@context": "https://schema.org",

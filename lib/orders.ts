@@ -6,8 +6,8 @@ import {
   getProductPackageSize,
   getProductPrice,
   hasKitPricing,
-  products,
   type PricingTier,
+  type Product,
   type ProductPackageType,
 } from "@/app/products";
 import { dollarsToCents } from "./money";
@@ -70,6 +70,7 @@ export function createOrderNumber() {
 export function buildOrderItems(
   cartItems: CheckoutCartItem[],
   pricingTier: PricingTier,
+  products: Product[],
 ) {
   const productById = new Map(products.map((product) => [product.id, product]));
 

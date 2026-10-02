@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getCurrentPricingTier } from "@/lib/member-pricing";
+import { getProductsWithPrices } from "@/lib/pricing";
 import { CheckoutPage } from "./CheckoutPage";
 
 export const metadata: Metadata = {
@@ -12,7 +13,10 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
-  const pricingTier = await getCurrentPricingTier();
+  const [pricingTier, catalog] = await Promise.all([
+    getCurrentPricingTier(),
+    getProductsWithPrices(),
+  ]);
 
-  return <CheckoutPage pricingTier={pricingTier} />;
+  return <CheckoutPage pricingTier={pricingTier} catalog={catalog} />;
 }

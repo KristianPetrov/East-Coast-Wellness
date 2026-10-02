@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { getInventoryByProductId } from "@/lib/inventory";
 import { getCurrentPricingTier } from "@/lib/member-pricing";
 import { absoluteUrl, siteConfig } from "@/lib/seo";
-import { productGroups } from "../products";
+import { getProductsWithPrices } from "@/lib/pricing";
+import { groupProducts } from "../products";
 import { StorePage } from "./StorePage";
 
 export const metadata: Metadata = {
@@ -26,10 +27,12 @@ export const metadata: Metadata = {
 };
 
 export default async function Page() {
-  const [inventoryByProduct, pricingTier] = await Promise.all([
+  const [inventoryByProduct, pricingTier, catalog] = await Promise.all([
     getInventoryByProductId(),
     getCurrentPricingTier(),
+    getProductsWithPrices(),
   ]);
+  const productGroups = groupProducts(catalog);
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -58,6 +61,7 @@ export default async function Page() {
         }}
       />
       <StorePage
+        catalog={catalog}
         inventoryByProduct={inventoryByProduct}
         pricingTier={pricingTier}
       />

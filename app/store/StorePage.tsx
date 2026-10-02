@@ -5,21 +5,23 @@ import { useMemo, useState, type CSSProperties } from "react";
 import { Logo } from "../Logo";
 import { MobileNav } from "../MobileNav";
 import { ProductCard } from "../ProductCard";
-import {
-  groupProducts,
-  productGroups,
-  products,
-  type PricingTier,
-} from "../products";
+import { groupProducts, type PricingTier, type Product } from "../products";
 import type { InventoryByProductId }  from "@/lib/inventory";
 
 type StorePageProps = {
+  catalog: Product[];
   inventoryByProduct: InventoryByProductId;
   pricingTier: PricingTier;
 };
 
-export function StorePage({ inventoryByProduct, pricingTier }: StorePageProps) {
+export function StorePage({
+  catalog,
+  inventoryByProduct,
+  pricingTier,
+}: StorePageProps) {
   const [query, setQuery] = useState("");
+
+  const productGroups = useMemo(() => groupProducts(catalog), [catalog]);
 
   const filteredGroups = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -29,14 +31,14 @@ export function StorePage({ inventoryByProduct, pricingTier }: StorePageProps) {
     }
 
     return groupProducts(
-      products.filter((product) =>
+      catalog.filter((product) =>
         [product.name, product.amount, product.category]
           .join(" ")
           .toLowerCase()
           .includes(normalizedQuery),
       ),
     );
-  }, [query]);
+  }, [catalog, productGroups, query]);
 
   return (
     <main className="min-h-screen bg-[#f7f2ea] pb-32 text-[#171411]">

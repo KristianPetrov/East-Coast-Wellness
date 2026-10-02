@@ -10,6 +10,7 @@ import {
 } from "@/db/schema";
 import { getAuthSession } from "@/auth";
 import { getCurrentPricingTier } from "@/lib/member-pricing";
+import { getProductsWithPrices } from "@/lib/pricing";
 import {
   calculateReferralDiscountCents,
   getActiveReferralCode,
@@ -53,8 +54,11 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
   try {
     const session = await getAuthSession();
     const email = input.email.trim().toLowerCase();
-    const pricingTier = await getCurrentPricingTier();
-    const builtItems = buildOrderItems(input.items, pricingTier);
+    const [pricingTier, catalog] = await Promise.all([
+      getCurrentPricingTier(),
+      getProductsWithPrices(),
+    ]);
+    const builtItems = buildOrderItems(input.items, pricingTier, catalog);
 
     if (builtItems.length === 0) {
       return { ok: false, message: "Add at least one product before checkout." };
