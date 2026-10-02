@@ -10,6 +10,11 @@ import {
 
 export const cartStorageKey = "ecw-cart-v1";
 export const cartUpdatedEvent = "ecw-cart-updated";
+export const cartOpenEvent = "ecw-cart-open";
+
+export function openCart() {
+  window.dispatchEvent(new Event(cartOpenEvent));
+}
 
 export type CartItem = Product & {
   productId: string;

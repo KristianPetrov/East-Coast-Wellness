@@ -1,8 +1,7 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { Logo } from "../Logo";
-import { MobileNav } from "../MobileNav";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState, useTransition } from "react";
 import {
@@ -20,6 +19,7 @@ import {
   type PricingTier,
   type Product,
 } from "../products";
+import { btnPrimary, Eyebrow, fieldInput, fieldLabel, Notice } from "../ui";
 import { createOrder, type CheckoutResult } from "./actions";
 import {
   shippingOptions,
@@ -151,117 +151,78 @@ export function CheckoutPage({ pricingTier, catalog }: CheckoutPageProps) {
   const total = subtotal + shippingPrice;
 
   return (
-    <main className="min-h-screen bg-[#f7f2ea] pb-32 text-[#171411]">
-      <header className="border-b border-black/10 bg-[#fff8ef]">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 lg:px-8">
-          <Logo href="/" priority />
-          <div className="flex items-center gap-3">
-            <Link
-              href="/store"
-              className="hidden rounded-full bg-[#ea7500] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#c95f00] sm:inline-block"
-            >
-              Back to Store
-            </Link>
-            <MobileNav
-              className="sm:hidden"
-              links={[
-                { href: "/store", label: "Back to Store" },
-                { href: "/orders/lookup", label: "Order Lookup" },
-                { href: "/login", label: "Login" },
-              ]}
-            />
-          </div>
-        </div>
-      </header>
-
-      <section className="mx-auto grid max-w-7xl gap-8 px-6 py-14 lg:grid-cols-[1.05fr_0.95fr] lg:px-8">
-        <div>
-          <p className="text-sm font-bold uppercase tracking-[0.28em] text-[#c95f00]">
-            Checkout
-          </p>
-          <h1 className="mt-3 text-5xl font-semibold tracking-tighter sm:text-6xl">
-            Shipping and contact details.
+    <main className="min-h-screen bg-paper pb-24 text-ink">
+      <section className="mx-auto max-w-7xl px-5 pb-6 pt-12 sm:px-6 lg:px-8 lg:pt-16">
+        <Link
+          href="/store"
+          className="group inline-flex items-center gap-2 text-sm text-muted transition hover:text-ink"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4 transition-transform group-hover:-translate-x-1" aria-hidden>
+            <path d="M19 12H5M11 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Continue shopping
+        </Link>
+        <div className="animate-rise mt-6">
+          <Eyebrow>Checkout</Eyebrow>
+          <h1 className="mt-5 font-display text-5xl leading-[1.02] tracking-tight sm:text-6xl">
+            Shipping and <span className="text-gradient-copper italic">contact details.</span>
           </h1>
-          <p className="mt-5 max-w-2xl text-lg leading-8 text-[#62564c]">
+          <p className="mt-4 max-w-2xl leading-7 text-muted">
             Provide the information needed to prepare the order request. This
             checkout page does not provide medical guidance or dosing
             instructions.
           </p>
+        </div>
+      </section>
 
-          <form
-            onSubmit={handleSubmit}
-            autoComplete="on"
-            className="mt-10 grid gap-5 rounded-4xl border border-black/10 bg-white p-6 shadow-xl shadow-orange-950/10"
-          >
+      <section className="mx-auto grid max-w-7xl gap-8 px-5 py-6 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12 lg:px-8">
+        <form onSubmit={handleSubmit} autoComplete="on" className="grid gap-6">
+          <CheckoutStep number={1} title="Contact">
             <div className="grid gap-5 sm:grid-cols-2">
-              <label className="grid gap-2 text-sm font-semibold text-[#3b332d]">
-                Full Name
-                <input
-                  name="name"
-                  required
-                  autoComplete="shipping name"
-                  className="rounded-2xl border border-black/10 bg-[#fffaf2] px-4 py-3 text-base font-normal outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
-                />
+              <label className={fieldLabel}>
+                Full name
+                <input name="name" required autoComplete="shipping name" className={fieldInput} />
               </label>
-              <label className="grid gap-2 text-sm font-semibold text-[#3b332d]">
-                Phone Number
-                <input
-                  name="phone"
-                  type="tel"
-                  required
-                  autoComplete="shipping tel"
-                  className="rounded-2xl border border-black/10 bg-[#fffaf2] px-4 py-3 text-base font-normal outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
-                />
+              <label className={fieldLabel}>
+                Phone number
+                <input name="phone" type="tel" required autoComplete="shipping tel" className={fieldInput} />
               </label>
             </div>
-
-            <label className="grid gap-2 text-sm font-semibold text-[#3b332d]">
-              Email Address
-              <input
-                name="email"
-                type="email"
-                required
-                autoComplete="shipping email"
-                className="rounded-2xl border border-black/10 bg-[#fffaf2] px-4 py-3 text-base font-normal outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
-              />
+            <label className={fieldLabel}>
+              Email address
+              <input name="email" type="email" required autoComplete="shipping email" className={fieldInput} />
+              <span className="text-xs font-normal text-faint">
+                Your confirmation and payment details are sent here.
+              </span>
             </label>
+          </CheckoutStep>
 
-            <label className="grid gap-2 text-sm font-semibold text-[#3b332d]">
-              Shipping Address
+          <CheckoutStep number={2} title="Shipping address">
+            <label className={fieldLabel}>
+              Street address
               <input
                 name="address"
                 required
                 autoComplete="shipping address-line1"
                 placeholder="Street address"
-                className="rounded-2xl border border-black/10 bg-[#fffaf2] px-4 py-3 text-base font-normal outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
+                className={fieldInput}
               />
             </label>
-
             <input
               name="address2"
               autoComplete="shipping address-line2"
               placeholder="Apartment, suite, unit, etc. (optional)"
-              className="rounded-2xl border border-black/10 bg-[#fffaf2] px-4 py-3 text-base outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
+              aria-label="Apartment, suite, or unit"
+              className={fieldInput}
             />
-
-            <div className="grid gap-5 sm:grid-cols-3">
-              <label className="grid gap-2 text-sm font-semibold text-[#3b332d]">
+            <div className="grid gap-5 sm:grid-cols-[1.3fr_1fr_0.8fr]">
+              <label className={fieldLabel}>
                 City
-                <input
-                  name="city"
-                  required
-                  autoComplete="shipping address-level2"
-                  className="rounded-2xl border border-black/10 bg-[#fffaf2] px-4 py-3 text-base font-normal outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
-                />
+                <input name="city" required autoComplete="shipping address-level2" className={fieldInput} />
               </label>
-              <label className="grid gap-2 text-sm font-semibold text-[#3b332d]">
+              <label className={fieldLabel}>
                 State
-                <select
-                  name="state"
-                  required
-                  autoComplete="shipping address-level1"
-                  className="rounded-2xl border border-black/10 bg-[#fffaf2] px-4 py-3 text-base font-normal outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
-                >
+                <select name="state" required autoComplete="shipping address-level1" className={fieldInput}>
                   {usStates.map(([value, label]) => (
                     <option key={value} value={value}>
                       {label}
@@ -269,139 +230,186 @@ export function CheckoutPage({ pricingTier, catalog }: CheckoutPageProps) {
                   ))}
                 </select>
               </label>
-              <label className="grid gap-2 text-sm font-semibold text-[#3b332d]">
-                ZIP Code
-                <input
-                  name="zip"
-                  required
-                  autoComplete="shipping postal-code"
-                  className="rounded-2xl border border-black/10 bg-[#fffaf2] px-4 py-3 text-base font-normal outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
-                />
+              <label className={fieldLabel}>
+                ZIP code
+                <input name="zip" required autoComplete="shipping postal-code" inputMode="numeric" className={fieldInput} />
               </label>
             </div>
+          </CheckoutStep>
 
-            <div className="rounded-3xl bg-[#fff8ef] p-5 text-sm leading-6 text-[#62564c]">
-              Products are intended for qualified laboratory research only and
-              are not for human or animal consumption.
+          <CheckoutStep number={3} title="Delivery">
+            <div className="grid gap-3" role="radiogroup" aria-label="Shipping method">
+              {Object.entries(shippingOptions).map(([value, option]) => {
+                const isSelected = shippingMethod === value;
+
+                return (
+                  <label
+                    key={value}
+                    className={`flex cursor-pointer items-center justify-between gap-3 rounded-xl border px-4 py-4 text-sm transition ${
+                      isSelected
+                        ? "border-ink bg-white shadow-[0_0_0_1px_var(--color-ink)]"
+                        : "border-ink/12 bg-bone hover:border-ink/30"
+                    }`}
+                  >
+                    <span className="flex items-center gap-3 font-medium">
+                      <input
+                        name="shippingMethod"
+                        type="radio"
+                        value={value}
+                        checked={isSelected}
+                        onChange={() => setShippingMethod(value as ShippingMethod)}
+                        className="h-4 w-4 accent-[var(--color-ink)]"
+                      />
+                      {option.label}
+                    </span>
+                    <span className="tabular-nums">{formatPrice(option.priceCents / 100)}</span>
+                  </label>
+                );
+              })}
             </div>
+          </CheckoutStep>
 
-            <fieldset className="grid gap-3 rounded-3xl border border-black/10 bg-[#fffaf2] p-5">
-              <legend className="px-2 text-sm font-bold uppercase tracking-[0.2em] text-[#a24b00]">
-                Shipping
-              </legend>
-              {Object.entries(shippingOptions).map(([value, option]) => (
-                <label
-                  key={value}
-                  className="flex items-center justify-between gap-3 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-[#3b332d]"
-                >
-                  <span className="flex items-center gap-3">
-                    <input
-                      name="shippingMethod"
-                      type="radio"
-                      value={value}
-                      checked={shippingMethod === value}
-                      onChange={() => setShippingMethod(value as ShippingMethod)}
-                      className="h-4 w-4 accent-[#ea7500]"
-                    />
-                    {option.label}
-                  </span>
-                  <span>{formatPrice(option.priceCents / 100)}</span>
-                </label>
-              ))}
-            </fieldset>
-
-            <label className="grid gap-2 text-sm font-semibold text-[#3b332d]">
-              Referral Code
+          <CheckoutStep number={4} title="Referral and payment">
+            <label className={fieldLabel}>
+              Referral code
               <input
                 name="referralCode"
                 autoComplete="off"
                 placeholder="Optional"
-                className="rounded-2xl border border-black/10 bg-[#fffaf2] px-4 py-3 text-base font-normal uppercase outline-none focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
+                className={`${fieldInput} uppercase placeholder:normal-case`}
               />
-              <span className="text-xs font-normal leading-5 text-[#62564c]">
-                Active referral discounts are applied to product subtotal when
-                the order is created.
+              <span className="text-xs font-normal leading-5 text-faint">
+                Active referral discounts are applied to the product subtotal
+                when the order is created.
               </span>
             </label>
-
-            <div className="rounded-3xl border border-black/10 bg-[#fffaf2] p-5">
-              <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#a24b00]">
-                Manual Payment
-              </p>
-              <p className="mt-3 text-sm leading-6 text-[#62564c]">
-                After checkout, you can pay with either Venmo or Zelle. Both
-                options are shown on the thank-you page and included in the
-                order email.
-              </p>
+            <div className="grid gap-3 rounded-xl border border-ink/10 bg-paper p-5 sm:grid-cols-[auto_1fr] sm:items-start sm:gap-4">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-copper-wash text-copper" aria-hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4">
+                  <rect x="3" y="6" width="18" height="12" rx="2" />
+                  <path d="M3 10h18" />
+                </svg>
+              </span>
+              <div>
+                <p className="font-medium">Manual payment by Venmo or Zelle</p>
+                <p className="mt-1 text-sm leading-6 text-muted">
+                  After you create the order, both options are shown on the
+                  confirmation page and included in your order email.
+                </p>
+              </div>
             </div>
+          </CheckoutStep>
 
-            <button
-              type="submit"
-              disabled={isPending || items.length === 0}
-              className="rounded-full bg-[#171411] px-7 py-4 text-sm font-bold text-white transition hover:bg-[#302821] disabled:cursor-not-allowed disabled:bg-[#8b8178]"
-            >
-              {isPending ? "Creating Order..." : "Create Order"}
-            </button>
-
-            {result && !result.ok ? (
-              <p className="rounded-2xl bg-[#fff1f1] p-4 text-sm font-semibold text-[#8a1f1f]">
-                {result.message}
-              </p>
-            ) : null}
-          </form>
-        </div>
-
-        <aside className="h-fit rounded-4xl border border-black/10 bg-[#171411] p-6 text-white shadow-2xl shadow-black/20 lg:sticky lg:top-6">
-          <p className="text-sm font-bold uppercase tracking-[0.28em] text-[#ff9b32]">
-            Order Summary
+          <p className="text-xs leading-5 text-faint">
+            Products are intended for qualified laboratory research only and
+            are not for human or animal consumption.
           </p>
-          <div className="mt-5 space-y-4">
-            {items.length > 0 ? (
-              items.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-start justify-between gap-4 border-b border-white/10 pb-4"
-                >
-                  <div>
-                    <p className="font-semibold">{item.name}</p>
-                    <p className="mt-1 text-sm text-white/55">
-                      {item.amount} • {getProductPackageLabel(item.packageType)} •
-                      Qty {item.quantity}
-                    </p>
-                  </div>
-                  <p className="font-semibold">
-                    {formatPrice(
-                      getCartItemPrice(item, pricingTier, catalog) * item.quantity,
-                    )}
-                  </p>
-                </div>
-              ))
+
+          {result && !result.ok ? <Notice>{result.message}</Notice> : null}
+
+          <button
+            type="submit"
+            disabled={isPending || items.length === 0}
+            className={`${btnPrimary} w-full py-4! text-base!`}
+          >
+            {isPending ? (
+              <>
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-bone/30 border-t-bone" aria-hidden />
+                Creating order…
+              </>
             ) : (
-              <p className="rounded-3xl bg-white/6 p-5 text-white/65">
-                Your cart is empty. Add research products from the store before
-                submitting checkout details.
-              </p>
+              "Create order"
+            )}
+          </button>
+        </form>
+
+        <aside className="h-fit rounded-2xl border border-ink/10 bg-bone lg:sticky lg:top-24">
+          <div className="flex items-center justify-between border-b border-ink/10 px-6 py-5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-copper">
+              Order summary
+            </p>
+            <p className="text-sm text-muted">
+              {count} {count === 1 ? "item" : "items"}
+            </p>
+          </div>
+          <div className="max-h-[50vh] overflow-y-auto px-6">
+            {items.length > 0 ? (
+              <ul className="divide-y divide-ink/10">
+                {items.map((item) => (
+                  <li key={item.id} className="flex items-center gap-4 py-4">
+                    <div className="relative flex h-16 w-14 shrink-0 items-center justify-center rounded-lg bg-white ring-1 ring-ink/8">
+                      <Image src={item.image} alt="" width={112} height={128} className="h-full w-full object-contain p-1" />
+                      <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-ink px-1 text-[10px] font-semibold text-bone">
+                        {item.quantity}
+                      </span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium">{item.name}</p>
+                      <p className="mt-0.5 line-clamp-2 text-xs text-muted">
+                        {item.amount} · {getProductPackageLabel(item.packageType)}
+                      </p>
+                    </div>
+                    <p className="shrink-0 text-sm font-medium tabular-nums">
+                      {formatPrice(getCartItemPrice(item, pricingTier, catalog) * item.quantity)}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="py-10 text-center">
+                <p className="font-display text-2xl">Your cart is empty.</p>
+                <p className="mt-2 text-sm text-muted">
+                  Add research products from the store before submitting
+                  checkout details.
+                </p>
+                <Link href="/store" className="mt-5 inline-block rounded-full border border-ink/15 px-5 py-2.5 text-sm font-medium transition hover:bg-sand">
+                  Browse the catalog
+                </Link>
+              </div>
             )}
           </div>
-
-          <div className="mt-6 space-y-3 border-t border-white/10 pt-5">
-            <div className="flex items-center justify-between text-sm text-white/65">
-              <span>
-                Subtotal · {count} {count === 1 ? "item" : "items"}
-              </span>
-              <span>{formatPrice(subtotal)}</span>
+          <dl className="space-y-3 border-t border-ink/10 px-6 py-5 text-sm">
+            <div className="flex items-center justify-between text-muted">
+              <dt>Subtotal</dt>
+              <dd className="tabular-nums">{formatPrice(subtotal)}</dd>
             </div>
-            <div className="flex items-center justify-between text-sm text-white/65">
-              <span>{shippingOptions[shippingMethod].label}</span>
-              <span>{formatPrice(shippingPrice)}</span>
+            <div className="flex items-center justify-between text-muted">
+              <dt>{shippingOptions[shippingMethod].label}</dt>
+              <dd className="tabular-nums">{formatPrice(shippingPrice)}</dd>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-white/65">Total</span>
-              <span className="text-3xl font-semibold">{formatPrice(total)}</span>
+            <div className="flex items-baseline justify-between border-t border-ink/10 pt-4">
+              <dt className="font-medium">Total</dt>
+              <dd className="font-display text-4xl tabular-nums">{formatPrice(total)}</dd>
             </div>
-          </div>
+            <p className="text-xs text-faint">
+              Referral discounts, if any, are applied when the order is created.
+            </p>
+          </dl>
         </aside>
       </section>
     </main>
+  );
+}
+
+function CheckoutStep({
+  number,
+  title,
+  children,
+}: {
+  number: number;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <fieldset className="grid gap-5 rounded-2xl border border-ink/10 bg-white/80 p-5 sm:p-7">
+      <legend className="sr-only">{title}</legend>
+      <div className="flex items-center gap-3" aria-hidden>
+        <span className="flex h-8 w-8 items-center justify-center rounded-full border border-copper/30 font-display text-base text-copper">
+          {number}
+        </span>
+        <h2 className="font-display text-2xl">{title}</h2>
+      </div>
+      {children}
+    </fieldset>
   );
 }

@@ -1,8 +1,14 @@
 @import "tailwindcss";
 
+/*
+ * East Coast Wellness design tokens.
+ * Direction: "coastal apothecary" — bone paper, warm ink, and a copper
+ * accent drawn from the lighthouse mark. Accent is used sparingly; most
+ * hierarchy comes from type, spacing, and hairline rules.
+ */
 :root {
-  --background: #f7f2ea;
-  --foreground: #171717;
+  --background: #f6f1e9;
+  --foreground: #16130f;
 }
 
 @theme inline {
@@ -12,9 +18,31 @@
   --font-mono: var(--font-geist-mono);
 }
 
+@theme {
+  --color-paper: #f6f1e9;
+  --color-bone: #fbf8f3;
+  --color-sand: #ede5d9;
+  --color-ink: #16130f;
+  --color-ink-soft: #3a332c;
+  --color-muted: #6b6057;
+  --color-faint: #998d82;
+  --color-night: #100d0a;
+  --color-copper: #a8591b;
+  --color-copper-deep: #7f4213;
+  --color-copper-bright: #d48a45;
+  --color-copper-wash: #f5e8d8;
+  --color-sage: #3d6a48;
+  --color-sage-wash: #e6eee4;
+  --color-rust: #9b2c2c;
+  --color-rust-wash: #f7e8e5;
+  --color-amber-wash: #fbefd9;
+  --color-amber-ink: #8a5a06;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
+  font-feature-settings: "ss01", "cv11";
 }
 
 html {
@@ -23,12 +51,12 @@ html {
 }
 
 ::selection {
-  background: rgba(234, 117, 0, 0.28);
-  color: #171411;
+  background: rgba(168, 89, 27, 0.22);
+  color: #16130f;
 }
 
 :focus-visible {
-  outline: 2px solid #ea7500;
+  outline: 2px solid #a8591b;
   outline-offset: 3px;
 }
 
@@ -36,6 +64,35 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
   outline: none;
+}
+
+/* Hide native number spinners; quantities and prices are typed. */
+.no-spin {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.no-spin::-webkit-inner-spin-button,
+.no-spin::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Native <details> disclosure without the default marker. */
+details > summary {
+  list-style: none;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.details-chevron {
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+details[open] .details-chevron {
+  transform: rotate(180deg);
 }
 
 @keyframes featured-slideshow-progress {
@@ -79,12 +136,11 @@ textarea:focus-visible {
   border-radius: 9999px;
   background: radial-gradient(
     ellipse at center,
-    rgba(255, 210, 140, 0.75) 0%,
-    rgba(255, 186, 120, 0.45) 42%,
-    rgba(255, 228, 196, 0.2) 62%,
-    transparent 78%
+    rgba(255, 214, 160, 0.45) 0%,
+    rgba(240, 190, 140, 0.22) 45%,
+    transparent 75%
   );
-  filter: blur(22px);
+  filter: blur(24px);
   animation: logo-glow-pulse 3.2s ease-in-out infinite;
   pointer-events: none;
 }
@@ -214,8 +270,9 @@ textarea:focus-visible {
 }
 
 /* Gradient accent for display words. */
-.text-gradient-ember {
-  background-image: linear-gradient(100deg, #c95f00 0%, #ea7500 45%, #ffac4a 100%);
+.text-gradient-ember,
+.text-gradient-copper {
+  background-image: linear-gradient(100deg, #7f4213 0%, #a8591b 40%, #d48a45 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -272,7 +329,8 @@ textarea:focus-visible {
   bottom: -4px;
   height: 1.5px;
   border-radius: 9999px;
-  background: #ea7500;
+  background: currentColor;
+  opacity: 0.6;
   transform: scaleX(0);
   transform-origin: left;
   transition: transform 0.4s var(--ease-out-expo);
@@ -342,5 +400,46 @@ textarea:focus-visible {
 
   .btn-sheen::after {
     display: none;
+  }
+}
+
+/* Copper hairline used to separate dark sections. */
+.rule-copper {
+  background: linear-gradient(90deg, transparent, rgba(212, 138, 69, 0.55), transparent);
+}
+
+/* Slide-over drawer (cart). */
+@keyframes drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Gentle marquee for the trust strip. */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-track {
+  animation: marquee 40s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+
+  .details-chevron {
+    transition: none;
   }
 }

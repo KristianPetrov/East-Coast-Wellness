@@ -47,7 +47,7 @@ export function MobileNav({ links, className = "" }: MobileNavProps) {
         aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
         aria-expanded={isOpen}
         onClick={() => setIsOpen((current) => !current)}
-        className="flex h-11 w-11 items-center justify-center rounded-full border border-black/10 bg-white/80 text-[#171411] shadow-sm backdrop-blur transition duration-300 hover:bg-white active:scale-95"
+        className="flex h-11 w-11 items-center justify-center rounded-full border border-ink/12 bg-bone/70 text-ink backdrop-blur transition duration-300 hover:border-ink/25 hover:bg-bone active:scale-95"
       >
         <span className="grid gap-1.5" aria-hidden>
           <span className={`${bar} ${isOpen ? "translate-y-2 rotate-45" : ""}`} />
@@ -59,7 +59,7 @@ export function MobileNav({ links, className = "" }: MobileNavProps) {
       <nav
         aria-hidden={!isOpen}
         inert={!isOpen}
-        className={`absolute right-0 top-14 z-50 grid min-w-56 origin-top-right gap-1 rounded-3xl border border-black/10 bg-white p-2 text-sm font-bold text-[#171411] shadow-2xl shadow-orange-950/15 transition duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+        className={`absolute right-0 top-14 z-50 grid min-w-56 origin-top-right gap-1 rounded-2xl border border-ink/10 bg-bone p-2 text-sm font-medium text-ink shadow-[0_30px_60px_-20px_rgba(60,35,10,0.35)] transition duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
           isOpen
             ? "translate-y-0 scale-100 opacity-100"
             : "pointer-events-none -translate-y-2 scale-95 opacity-0"
@@ -71,7 +71,7 @@ export function MobileNav({ links, className = "" }: MobileNavProps) {
             href={link.href}
             onClick={() => setIsOpen(false)}
             style={{ transitionDelay: isOpen ? `${60 + index * 35}ms` : "0ms" }}
-            className={`rounded-2xl px-4 py-3 transition duration-300 hover:bg-[#fff2e4] hover:pl-5 ${
+            className={`rounded-xl px-4 py-3 transition duration-300 hover:bg-sand hover:pl-5 ${
               isOpen ? "translate-x-0 opacity-100" : "translate-x-2 opacity-0"
             }`}
           >

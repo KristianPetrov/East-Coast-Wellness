@@ -46,10 +46,12 @@ export function AddToCartButton({
       }}
       className={
         className ??
-        `btn-sheen inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold text-white shadow-md transition duration-300 active:scale-95 disabled:cursor-not-allowed disabled:bg-[#8b8178] disabled:shadow-none sm:px-5 sm:py-3 sm:text-sm ${
+        `btn-sheen inline-flex w-full items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-medium tracking-wide text-white transition duration-300 active:scale-95 disabled:cursor-not-allowed disabled:bg-faint sm:w-auto sm:px-5 sm:text-sm ${
           added
-            ? "bg-[#2f7d32] shadow-green-900/20"
-            : "bg-[#ea7500] shadow-orange-900/20 hover:-translate-y-0.5 hover:bg-[#ff8a16] hover:shadow-lg hover:shadow-orange-900/30"
+            ? "bg-sage"
+            : blocked
+              ? "bg-amber-ink"
+              : "bg-ink hover:-translate-y-0.5 hover:bg-copper"
         }`
       }
     >
@@ -65,7 +67,7 @@ export function AddToCartButton({
           <path d="M5 12.5l4.5 4.5L19 7.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       ) : null}
-      {isOutOfStock ? "Out of Stock" : blocked ? "Stock Limit" : added ? "Added" : "Add to Cart"}
+      {isOutOfStock ? "Sold out" : blocked ? "Stock limit reached" : added ? "Added to cart" : "Add to cart"}
     </button>
   );
 }

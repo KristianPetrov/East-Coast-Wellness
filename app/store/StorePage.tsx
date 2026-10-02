@@ -1,98 +1,117 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState, type CSSProperties } from "react";
-import { Logo } from "../Logo";
-import { MobileNav } from "../MobileNav";
+import type { InventoryByProductId } from "@/lib/inventory";
 import { ProductCard } from "../ProductCard";
-import { groupProducts, type PricingTier, type Product } from "../products";
-import type { InventoryByProductId }  from "@/lib/inventory";
+import {
+  getProductPrice,
+  groupProducts,
+  type PricingTier,
+  type Product,
+} from "../products";
+import { Eyebrow } from "../ui";
 
 type StorePageProps = {
   catalog: Product[];
   inventoryByProduct: InventoryByProductId;
   pricingTier: PricingTier;
+  initialCategory?: string;
+  initialQuery?: string;
 };
+
+const categories = [
+  { key: "all", label: "All" },
+  { key: "molecule", label: "Molecules" },
+  { key: "blend", label: "Blends" },
+  { key: "compound", label: "Compounds" },
+  { key: "supply", label: "Supplies" },
+] as const;
+
+type CategoryKey = (typeof categories)[number]["key"];
+type SortKey = "name" | "price-asc" | "price-desc" | "in-stock";
+
+function toCategoryKey(value?: string): CategoryKey {
+  return categories.some((category) => category.key === value)
+    ? (value as CategoryKey)
+    : "all";
+}
 
 export function StorePage({
   catalog,
   inventoryByProduct,
   pricingTier,
+  initialCategory,
+  initialQuery,
 }: StorePageProps) {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery ?? "");
+  const [category, setCategory] = useState<CategoryKey>(
+    toCategoryKey(initialCategory),
+  );
+  const [sort, setSort] = useState<SortKey>("name");
 
   const productGroups = useMemo(() => groupProducts(catalog), [catalog]);
 
-  const filteredGroups = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: productGroups.length };
 
-    if (!normalizedQuery) {
-      return productGroups;
+    for (const group of productGroups) {
+      const key = toCategoryKey(group.category.toLowerCase().replace("research ", ""));
+      counts[key] = (counts[key] ?? 0) + 1;
     }
 
-    return groupProducts(
-      catalog.filter((product) =>
+    return counts;
+  }, [productGroups]);
+
+  const filteredGroups = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    const matches = catalog.filter((product) => {
+      const inCategory =
+        category === "all" || product.category.toLowerCase().includes(category);
+      const matchesQuery =
+        !normalizedQuery ||
         [product.name, product.amount, product.category]
           .join(" ")
           .toLowerCase()
-          .includes(normalizedQuery),
-      ),
-    );
-  }, [catalog, productGroups, query]);
+          .includes(normalizedQuery);
+
+      return inCategory && matchesQuery;
+    });
+    const groups = groupProducts(matches);
+    const startingPrice = (group: (typeof groups)[number]) =>
+      Math.min(
+        ...group.variants.map((variant) =>
+          getProductPrice(variant, pricingTier, "vial"),
+        ),
+      );
+    const stock = (group: (typeof groups)[number]) =>
+      group.variants.reduce(
+        (total, variant) => total + (inventoryByProduct[variant.id] ?? 0),
+        0,
+      );
+
+    if (sort === "price-asc") {
+      groups.sort((a, b) => startingPrice(a) - startingPrice(b));
+    } else if (sort === "price-desc") {
+      groups.sort((a, b) => startingPrice(b) - startingPrice(a));
+    } else if (sort === "in-stock") {
+      groups.sort((a, b) => Number(stock(b) > 0) - Number(stock(a) > 0));
+    }
+
+    return groups;
+  }, [catalog, category, inventoryByProduct, pricingTier, query, sort]);
 
   return (
-    <main className="min-h-screen bg-[#f7f2ea] pb-32 text-[#171411]">
-      <header className="sticky top-0 z-40 border-b border-black/10 bg-[#fff8ef]/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 lg:px-8">
-          <Logo href="/" priority />
-          <div className="flex items-center gap-3">
-            <Link
-              href="/orders/lookup"
-              className="hidden rounded-full border border-black/10 bg-white px-5 py-3 text-sm font-bold text-[#171411] transition hover:bg-[#fff2e4] sm:inline-block"
-            >
-              Order Lookup
-            </Link>
-            <Link
-              href="/login"
-              className="hidden rounded-full border border-black/10 bg-white px-5 py-3 text-sm font-bold text-[#171411] transition hover:bg-[#fff2e4] sm:inline-block"
-            >
-              Login
-            </Link>
-            <Link
-              href="/checkout"
-              className="hidden rounded-full bg-[#171411] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#302821] sm:inline-block"
-            >
-              Checkout
-            </Link>
-            <MobileNav
-              className="sm:hidden"
-              links={[
-                { href: "/orders/lookup", label: "Order Lookup" },
-                { href: "/login", label: "Login" },
-                { href: "/checkout", label: "Checkout" },
-              ]}
-            />
-          </div>
-        </div>
-      </header>
-
-      <section className="mx-auto max-w-7xl px-6 py-14 lg:px-8">
-        <div className="grid gap-8 lg:grid-cols-[0.86fr_1.14fr] lg:items-end">
+    <main className="min-h-screen bg-paper pb-32 text-ink">
+      <section className="border-b border-ink/8 bg-[radial-gradient(ellipse_at_90%_0%,rgba(212,138,69,0.14),transparent_45%),linear-gradient(180deg,#fbf8f3_0%,#f3ece2_100%)]">
+        <div className="mx-auto grid max-w-7xl gap-8 px-5 pb-12 pt-14 sm:px-6 lg:grid-cols-[1fr_0.8fr] lg:items-end lg:px-8 lg:pb-16 lg:pt-20">
           <div className="animate-rise">
-            <p className="flex items-center gap-3 text-sm font-bold uppercase tracking-[0.28em] text-[#c95f00]">
-              <span className="h-px w-8 bg-current opacity-50" aria-hidden="true" />
-              Store
-            </p>
-            <h1 className="mt-3 text-5xl font-semibold tracking-tighter sm:text-6xl">
-              Search{" "}
-              <span className="text-gradient-ember font-display text-[1.12em] font-normal italic tracking-tight">
-                research
-              </span>{" "}
-              products.
+            <Eyebrow>The catalog</Eyebrow>
+            <h1 className="mt-5 font-display text-5xl leading-[1] tracking-tight sm:text-7xl">
+              Research <span className="text-gradient-copper italic">products.</span>
             </h1>
           </div>
           <p
-            className="animate-rise text-lg leading-8 text-[#62564c]"
+            className="animate-rise max-w-lg leading-7 text-muted"
             style={{ "--delay": "120ms" } as CSSProperties}
           >
             Browse research-use molecules, blends, sprays, and supplies by name,
@@ -100,40 +119,106 @@ export function StorePage({
             cataloging only.
           </p>
         </div>
+      </section>
 
-        <div
-          className="animate-rise mt-10 rounded-4xl border border-black/10 bg-white p-4 shadow-xl shadow-orange-950/10 transition-shadow duration-500 focus-within:shadow-2xl focus-within:shadow-orange-950/15"
-          style={{ "--delay": "220ms" } as CSSProperties}
-        >
-          <label
-            htmlFor="product-search"
-            className="mb-3 block text-sm font-bold uppercase tracking-[0.2em] text-[#a24b00]"
+      <div className="sticky top-[73px] z-30 border-b border-ink/8 bg-paper/90 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+          <div
+            className="-mx-1 flex gap-1.5 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            role="tablist"
+            aria-label="Filter by category"
           >
-            Search Catalog
-          </label>
-          <input
-            id="product-search"
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search BPC-15                                                7, NAD+, research blend..."
-            className="w-full rounded-3xl border border-black/10 bg-[#fffaf2] px-5 py-4 text-lg outline-none transition placeholder:text-[#9a8f84] focus:border-[#ea7500] focus:ring-4 focus:ring-[#ea7500]/15"
-          />
-        </div>
+            {categories.map((option) => {
+              const isActive = option.key === category;
+              const optionCount = categoryCounts[option.key] ?? 0;
 
-        <div className="mt-8 flex items-center justify-between text-sm text-[#62564c]">
-          <p>
+              if (option.key !== "all" && optionCount === 0) return null;
+
+              return (
+                <button
+                  key={option.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => setCategory(option.key)}
+                  className={`flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-[13px] font-medium transition duration-300 ${
+                    isActive
+                      ? "border-ink bg-ink text-bone"
+                      : "border-ink/12 bg-bone text-ink-soft hover:border-ink/30"
+                  }`}
+                >
+                  {option.label}
+                  <span className={isActive ? "text-bone/60" : "text-faint"}>
+                    {optionCount}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex gap-2">
+            <label className="relative flex-1 lg:w-72 lg:flex-none">
+              <span className="sr-only">Search catalog</span>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-faint"
+                aria-hidden
+              >
+                <circle cx="11" cy="11" r="6.5" />
+                <path d="M16 16l4 4" strokeLinecap="round" />
+              </svg>
+              <input
+                id="product-search"
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search BPC-157, NAD+, blends…"
+                className="w-full rounded-full border border-ink/12 bg-bone py-2.5 pl-10 pr-4 text-sm outline-none transition placeholder:text-faint focus:border-copper focus:bg-white focus:ring-4 focus:ring-copper/12"
+              />
+            </label>
+            <label className="relative">
+              <span className="sr-only">Sort products</span>
+              <select
+                value={sort}
+                onChange={(event) => setSort(event.target.value as SortKey)}
+                className="h-full appearance-none rounded-full border border-ink/12 bg-bone py-2.5 pl-4 pr-9 text-sm text-ink-soft outline-none transition focus:border-copper focus:ring-4 focus:ring-copper/12"
+              >
+                <option value="name">Name A–Z</option>
+                <option value="price-asc">Price: low to high</option>
+                <option value="price-desc">Price: high to low</option>
+                <option value="in-stock">In stock first</option>
+              </select>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                className="pointer-events-none absolute right-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted"
+                aria-hidden
+              >
+                <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <section className="mx-auto max-w-7xl px-5 py-10 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-[0.18em] text-faint">
+          <p aria-live="polite">
             Showing {filteredGroups.length} of {productGroups.length} products
           </p>
-          <p>For research use only</p>
+          <p className="hidden sm:block">For research use only</p>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
           {filteredGroups.map((group, index) => (
             <div
               key={group.id}
               className="animate-rise"
-              style={{ "--delay": `${Math.min(index, 8) * 60}ms` } as CSSProperties}
+              style={{ "--delay": `${Math.min(index, 8) * 50}ms` } as CSSProperties}
             >
               <ProductCard
                 group={group}
@@ -145,11 +230,21 @@ export function StorePage({
         </div>
 
         {filteredGroups.length === 0 ? (
-          <div className="animate-rise mt-8 rounded-3xl border border-black/10 bg-white p-8 text-center">
-            <h2 className="text-2xl font-semibold">No products found</h2>
-            <p className="mt-2 text-[#62564c]">
-              Try a different product name, category, or amount.
+          <div className="animate-rise mt-4 rounded-2xl border border-dashed border-ink/15 bg-bone p-12 text-center">
+            <h2 className="font-display text-3xl">No products found</h2>
+            <p className="mt-2 text-muted">
+              Try a different product name, amount, or category.
             </p>
+            <button
+              type="button"
+              onClick={() => {
+                setQuery("");
+                setCategory("all");
+              }}
+              className="mt-6 rounded-full border border-ink/15 px-5 py-2.5 text-sm font-medium transition hover:bg-sand"
+            >
+              Clear filters
+            </button>
           </div>
         ) : null}
       </section>

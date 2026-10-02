@@ -6,11 +6,11 @@ import { getCurrentPricingTier } from "@/lib/member-pricing";
 import { getProductsWithPrices } from "@/lib/pricing";
 import { absoluteUrl, siteConfig } from "@/lib/seo";
 import { FeaturedProductsSlideshow } from "./FeaturedProductsSlideshow";
-import { Logo } from "./Logo";
-import { MobileNav } from "./MobileNav";
 import { getFeaturedProductGroups, groupProducts } from "./products";
 import { Reveal } from "./Reveal";
-import { StickyHeader } from "./StickyHeader";
+import { SiteFooter } from "./SiteFooter";
+import { SiteHeader } from "./SiteHeader";
+import { ArrowIcon, btnGhost, btnPrimary, Eyebrow } from "./ui";
 
 export const metadata: Metadata = {
   title: "Research-Use Molecule Store",
@@ -30,47 +30,61 @@ export const metadata: Metadata = {
 };
 
 const standards = [
-  "Research-use-only labeling",
-  "Batch documentation available",
-  "Temperature-conscious fulfillment",
-  "Responsive client support",
+  {
+    title: "Research-use-only labeling",
+    body: "Every vial, spray, and kit is clearly labeled for laboratory research use.",
+  },
+  {
+    title: "Batch documentation available",
+    body: "Batch-specific records can be provided to support your documentation.",
+  },
+  {
+    title: "Temperature-conscious fulfillment",
+    body: "Orders are packed with attention to temperature-sensitive materials.",
+  },
+  {
+    title: "Responsive client support",
+    body: "Questions about orders, payment, and shipping get a prompt reply.",
+  },
 ];
 
-function Eyebrow({
-  children,
-  className = "text-[#c95f00]",
-  center = false,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  center?: boolean;
-}) {
-  return (
-    <p
-      className={`flex items-center gap-3 text-sm font-bold uppercase tracking-[0.28em] ${
-        center ? "justify-center" : ""
-      } ${className}`}
-    >
-      <span className="h-px w-8 bg-current opacity-50" aria-hidden="true" />
-      {children}
-    </p>
-  );
-}
+const categoryLinks = [
+  {
+    label: "Molecules",
+    category: "molecule",
+    body: "Single research molecules in vial and kit formats.",
+  },
+  {
+    label: "Blends",
+    category: "blend",
+    body: "Signature multi-molecule research blends.",
+  },
+  {
+    label: "Compounds",
+    category: "compound",
+    body: "Specialty research compounds.",
+  },
+  {
+    label: "Supplies",
+    category: "supply",
+    body: "Reconstitution solutions and lab supplies.",
+  },
+];
 
-function ArrowIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"
-      aria-hidden
-    >
-      <path d="M5 12h14M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
+const steps = [
+  {
+    title: "Build your order",
+    body: "Choose strengths and vial or 10-vial kit formats, then review your cart.",
+  },
+  {
+    title: "Create the order",
+    body: "Enter shipping details at checkout. Referral codes apply automatically.",
+  },
+  {
+    title: "Pay and track",
+    body: "Pay by Venmo or Zelle, then follow payment and tracking status online.",
+  },
+];
 
 export default async function Home() {
   const [inventoryByProduct, pricingTier, catalog] = await Promise.all([
@@ -78,7 +92,8 @@ export default async function Home() {
     getCurrentPricingTier(),
     getProductsWithPrices(),
   ]);
-  const featuredProductGroups = getFeaturedProductGroups(groupProducts(catalog));
+  const allGroups = groupProducts(catalog);
+  const featuredProductGroups = getFeaturedProductGroups(allGroups);
   const structuredData = [
     {
       "@context": "https://schema.org",
@@ -96,199 +111,158 @@ export default async function Home() {
   ];
 
   return (
-    <main className="min-h-screen overflow-x-clip bg-[#f7f2ea] text-[#171411]">
+    <main className="flex min-h-screen flex-col overflow-x-clip bg-paper text-ink">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(structuredData).replace(/</g, "\\u003c"),
         }}
       />
-      <StickyHeader>
-        <Logo
-          priority
-          className="h-auto w-48 transition-[width] duration-500 sm:w-64 group-data-[scrolled=true]/hdr:w-40 sm:group-data-[scrolled=true]/hdr:w-44"
-        />
-        <nav className="hidden items-center gap-8 text-sm font-medium text-[#5f544a] md:flex">
-          <a href="#products" className="link-underline transition hover:text-[#171411]">
-            Featured
-          </a>
-          <a href="#quality" className="link-underline transition hover:text-[#171411]">
-            Quality
-          </a>
-          <a href="#compliance" className="link-underline transition hover:text-[#171411]">
-            Compliance
-          </a>
-          <Link
-            href="/orders/lookup"
-            className="link-underline transition hover:text-[#171411]"
-          >
-            Order Lookup
-          </Link>
-        </nav>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/login"
-            className="hidden rounded-full border border-black/10 bg-white/60 px-5 py-3 text-sm font-semibold text-[#171411] transition duration-300 hover:-translate-y-0.5 hover:bg-white hover:shadow-md sm:inline-block"
-          >
-            Login
-          </Link>
-          <Link
-            href="/store"
-            className="btn-sheen rounded-full bg-[#ea7500] px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-900/20 transition duration-300 hover:-translate-y-0.5 hover:bg-[#c95f00] hover:shadow-xl hover:shadow-orange-900/30"
-          >
-            Shop Research
-          </Link>
-          <MobileNav
-            className="md:hidden"
-            links={[
-              { href: "#products", label: "Featured" },
-              { href: "#quality", label: "Quality" },
-              { href: "#compliance", label: "Compliance" },
-              { href: "/orders/lookup", label: "Order Lookup" },
-              { href: "/login", label: "Login" },
-              { href: "/store", label: "Shop Research" },
-            ]}
-          />
-        </div>
-      </StickyHeader>
+      <SiteHeader overlay />
 
-      <section className="grain relative border-b border-black/10 bg-[radial-gradient(circle_at_top_right,rgba(234,117,0,0.18),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(255,172,74,0.14),transparent_36%),linear-gradient(135deg,#fffaf2_0%,#efe4d6_100%)]">
-        <div
-          className="pointer-events-none absolute -right-40 -top-40 hidden h-[44rem] w-[44rem] rounded-full border border-[#ea7500]/15 lg:block"
-          aria-hidden="true"
-        />
-        <div
-          className="pointer-events-none absolute -right-20 -top-20 hidden h-[34rem] w-[34rem] rounded-full border border-[#ea7500]/10 lg:block"
-          aria-hidden="true"
-        />
-
-        <div className="relative z-10 mx-auto grid max-w-7xl gap-12 px-6 pb-20 pt-32 sm:pt-36 lg:grid-cols-[1.02fr_0.98fr] lg:items-center lg:px-8 lg:pb-32 lg:pt-44">
-          <div className="flex flex-col justify-center">
+      <section className="grain relative border-b border-ink/8 bg-[radial-gradient(ellipse_at_85%_10%,rgba(212,138,69,0.16),transparent_45%),linear-gradient(180deg,#fbf8f3_0%,#f1e9dd_100%)]">
+        <div className="relative z-10 mx-auto grid max-w-7xl gap-14 px-5 pb-20 pt-32 sm:px-6 sm:pt-36 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:px-8 lg:pb-28 lg:pt-44">
+          <div>
             <p
-              className="animate-rise mb-6 flex w-fit items-center gap-3 rounded-full border border-[#ea7500]/30 bg-white/70 px-4 py-2 text-xs font-bold uppercase tracking-[0.28em] text-[#a24b00] shadow-sm backdrop-blur"
+              className="animate-rise mb-7 flex w-fit items-center gap-3 rounded-full border border-copper/25 bg-bone/80 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-copper-deep backdrop-blur"
               style={{ "--delay": "100ms" } as React.CSSProperties}
             >
-              <span className="status-dot relative h-2 w-2 rounded-full bg-[#ea7500]" aria-hidden="true" />
+              <span className="status-dot relative h-1.5 w-1.5 rounded-full bg-copper" aria-hidden="true" />
               Premium research supply
             </p>
             <h1
-              className="animate-rise max-w-3xl text-5xl font-semibold tracking-tighter text-[#171411] sm:text-6xl lg:text-7xl"
+              className="animate-rise max-w-3xl font-display text-[3.4rem] leading-[0.98] tracking-tight text-ink sm:text-7xl lg:text-[5.6rem]"
               style={{ "--delay": "200ms" } as React.CSSProperties}
             >
-              Precision{" "}
-              <span className="text-gradient-ember pr-1 font-display text-[1.12em] font-normal italic tracking-tight">
-                molecule catalog
-              </span>{" "}
-              for qualified research.
+              Precision molecules,{" "}
+              <span className="text-gradient-copper italic">presented with care.</span>
             </h1>
             <p
-              className="animate-rise mt-6 max-w-2xl text-lg leading-8 text-[#5f544a]"
+              className="animate-rise mt-7 max-w-xl text-lg leading-8 text-muted"
               style={{ "--delay": "320ms" } as React.CSSProperties}
             >
-              East Coast Wellness offers a refined shopping experience for
-              research-use molecules, blends, sprays, and reconstitution
-              solutions with clear documentation and compliant product
-              presentation.
+              A refined catalog of research-use molecules, blends, sprays, and
+              reconstitution solutions, with clear documentation and compliant
+              product presentation.
             </p>
             <div
-              className="animate-rise mt-8 flex flex-col gap-3 sm:flex-row"
+              className="animate-rise mt-9 flex flex-col gap-3 sm:flex-row"
               style={{ "--delay": "440ms" } as React.CSSProperties}
             >
-              <Link
-                href="/store"
-                className="group btn-sheen inline-flex items-center justify-center gap-2 rounded-full bg-[#171411] px-7 py-4 text-center text-sm font-bold text-white shadow-lg shadow-black/20 transition duration-300 hover:-translate-y-0.5 hover:bg-[#302821] hover:shadow-xl hover:shadow-black/25"
-              >
-                Browse Store
+              <Link href="/store" className={`group ${btnPrimary} px-7! py-4!`}>
+                Shop the catalog
                 <ArrowIcon />
               </Link>
-              <a
-                href="#compliance"
-                className="rounded-full border border-black/15 bg-white/50 px-7 py-4 text-center text-sm font-bold text-[#171411] transition duration-300 hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
-              >
-                Read Use Notice
+              <a href="#compliance" className={`${btnGhost} px-7! py-4!`}>
+                Read the use notice
               </a>
             </div>
-            <p
-              className="animate-rise mt-6 max-w-xl text-sm leading-6 text-[#786b60]"
+            <dl
+              className="animate-rise mt-12 grid max-w-lg grid-cols-3 divide-x divide-ink/10 border-y border-ink/10 py-5"
               style={{ "--delay": "560ms" } as React.CSSProperties}
             >
-              Products displayed on this site are intended for laboratory
-              research only. They are not offered for human or animal
-              consumption, diagnosis, treatment, cure, or prevention of disease.
-            </p>
+              <div className="pr-4">
+                <dt className="text-[10px] font-semibold uppercase tracking-[0.2em] text-faint">
+                  Catalog
+                </dt>
+                <dd className="mt-1 font-display text-2xl sm:text-3xl">{allGroups.length}+</dd>
+              </div>
+              <div className="px-4">
+                <dt className="text-[10px] font-semibold uppercase tracking-[0.2em] text-faint">
+                  Formats
+                </dt>
+                <dd className="mt-1 font-display text-2xl sm:text-3xl">Vial · Kit</dd>
+              </div>
+              <div className="pl-4">
+                <dt className="text-[10px] font-semibold uppercase tracking-[0.2em] text-faint">
+                  Checkout
+                </dt>
+                <dd className="mt-1 font-display text-2xl sm:text-3xl">Guest</dd>
+              </div>
+            </dl>
           </div>
 
           <div
             className="animate-scale-in relative"
             style={{ "--delay": "300ms" } as React.CSSProperties}
           >
-            <div className="absolute -left-8 top-16 hidden h-28 w-28 rounded-full bg-[#ea7500]/25 blur-3xl lg:block" />
-            <div className="absolute -bottom-10 right-4 hidden h-32 w-32 rounded-full bg-[#ffac4a]/30 blur-3xl lg:block" />
-            <div className="float-slow relative rounded-4xl border border-white/60 bg-white/90 p-4 shadow-2xl shadow-black/25 ring-1 ring-black/5">
-              <div className="overflow-hidden rounded-[1.45rem]">
+            <div className="absolute -inset-6 -z-10 rounded-[2.5rem] bg-copper/10 blur-3xl" aria-hidden />
+            <div className="float-slow relative rounded-[1.75rem] border border-white bg-white p-3 shadow-[0_50px_100px_-40px_rgba(60,35,10,0.55)] ring-1 ring-ink/5">
+              <div className="overflow-hidden rounded-[1.25rem]">
                 <Image
                   src="/ecw-reconsitution-vials.PNG"
                   alt="East Coast Wellness reconstitution solution vials"
-                  width={1024}
-                  height={512}
+                  width={1774}
+                  height={887}
                   className="object-cover"
                   priority
                 />
               </div>
-              <div
-                className="animate-rise relative mt-3 rounded-2xl border border-white/20 bg-[#171411] px-5 py-3.5 text-white sm:absolute sm:bottom-6 sm:left-6 sm:right-6 sm:mt-0 sm:bg-black/65 shadow-xl backdrop-blur-md"
-                style={{ "--delay": "900ms" } as React.CSSProperties}
-              >
-                <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#ffac4a]">
-                  Research catalog
-                </p>
-                <p className="mt-1 text-lg font-semibold sm:text-xl">
-                  Vials, sprays, blends, and supplies
-                </p>
+              <div className="flex items-center justify-between gap-4 px-3 pb-2 pt-4">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-copper">
+                    The research catalog
+                  </p>
+                  <p className="mt-1 font-display text-xl sm:text-2xl">
+                    Vials, sprays, blends, and supplies
+                  </p>
+                </div>
+                <Link
+                  href="/store"
+                  aria-label="Shop the catalog"
+                  className="group flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink text-bone transition hover:bg-copper"
+                >
+                  <ArrowIcon />
+                </Link>
               </div>
             </div>
           </div>
         </div>
       </section>
 
+      <section aria-label="Our standards" className="border-b border-ink/8 bg-bone">
+        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-px bg-ink/8 lg:grid-cols-4">
+          {standards.map((standard, index) => (
+            <div key={standard.title} className="flex items-center gap-3 bg-bone px-5 py-5 sm:px-6">
+              <span className="font-display text-lg italic text-copper">
+                0{index + 1}
+              </span>
+              <span className="text-[13px] font-medium leading-snug text-ink-soft">
+                {standard.title}
+              </span>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section
         id="products"
-        className="relative overflow-hidden bg-[#171411] py-24 text-white"
+        className="relative overflow-hidden bg-night py-24 text-white sm:py-28"
       >
+        <div className="rule-copper absolute inset-x-0 top-0 h-px" aria-hidden="true" />
         <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#ff9b32]/60 to-transparent"
+          className="pointer-events-none absolute -right-40 -top-40 h-[32rem] w-[32rem] rounded-full bg-copper/15 blur-[120px]"
           aria-hidden="true"
         />
-        <div
-          className="pointer-events-none absolute -left-32 top-24 h-96 w-96 rounded-full bg-[#ea7500]/10 blur-3xl"
-          aria-hidden="true"
-        />
-        <div
-          className="pointer-events-none absolute -right-32 bottom-0 h-96 w-96 rounded-full bg-[#ea7500]/10 blur-3xl"
-          aria-hidden="true"
-        />
-        <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
-          <Reveal className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+        <div className="relative mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+          <Reveal className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
             <div>
-              <Eyebrow className="text-[#ff9b32]">Featured products</Eyebrow>
-              <h2 className="mt-4 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
+              <Eyebrow className="text-copper-bright">Featured products</Eyebrow>
+              <h2 className="mt-5 max-w-2xl font-display text-5xl leading-[1.02] tracking-tight sm:text-6xl">
                 Highlights from the{" "}
-                <span className="font-display text-[1.1em] font-normal italic tracking-tight text-[#ffb866]">
-                  research lineup.
-                </span>
+                <span className="italic text-copper-bright">research lineup.</span>
               </h2>
             </div>
-            <div className="flex max-w-xl flex-col gap-4">
-              <p className="leading-7 text-white/65">
-                A curated rotation of core molecules, signature blends, and
-                research compounds — browse strengths, compare formats, and add
-                to cart without leaving the homepage.
+            <div className="flex max-w-md flex-col gap-5">
+              <p className="leading-7 text-white/60">
+                Core molecules, signature blends, and research compounds.
+                Compare strengths and formats, then add to cart right here.
               </p>
               <Link
                 href="/store"
-                className="group inline-flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-6 py-3 text-sm font-bold text-white transition duration-300 hover:border-[#ff9b32]/50 hover:bg-white/15"
+                className="group inline-flex w-fit items-center gap-2 text-sm font-medium text-white transition hover:text-copper-bright"
               >
-                View full store
+                <span className="link-underline">View the full catalog</span>
                 <ArrowIcon />
               </Link>
             </div>
@@ -304,62 +278,135 @@ export default async function Home() {
         </div>
       </section>
 
-      <section id="quality" className="mx-auto max-w-7xl px-6 py-24 lg:px-8">
-        <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
+      <section className="mx-auto w-full max-w-7xl px-5 py-24 sm:px-6 sm:py-28 lg:px-8">
+        <Reveal className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
+          <div>
+            <Eyebrow>Shop by category</Eyebrow>
+            <h2 className="mt-5 font-display text-4xl leading-tight tracking-tight sm:text-5xl">
+              Find what your work <span className="italic text-copper">calls for.</span>
+            </h2>
+          </div>
+          <Link
+            href="/store"
+            className="group inline-flex items-center gap-2 text-sm font-medium text-ink-soft transition hover:text-copper"
+          >
+            <span className="link-underline">All products</span>
+            <ArrowIcon />
+          </Link>
+        </Reveal>
+        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {categoryLinks.map((category, index) => (
+            <Reveal key={category.category} delay={index * 80}>
+              <Link
+                href={`/store?category=${category.category}`}
+                className="group flex h-full flex-col justify-between gap-10 rounded-2xl border border-ink/10 bg-bone p-6 transition duration-500 hover:-translate-y-1 hover:border-copper/40 hover:bg-white hover:shadow-[0_30px_60px_-35px_rgba(60,35,10,0.45)]"
+              >
+                <span className="font-display text-lg italic text-copper">
+                  0{index + 1}
+                </span>
+                <span>
+                  <span className="flex items-center justify-between font-display text-3xl">
+                    {category.label}
+                    <ArrowIcon className="h-5 w-5 text-copper" />
+                  </span>
+                  <span className="mt-2 block text-sm leading-6 text-muted">
+                    {category.body}
+                  </span>
+                </span>
+              </Link>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      <section id="quality" className="border-y border-ink/8 bg-bone">
+        <div className="mx-auto grid max-w-7xl gap-14 px-5 py-24 sm:px-6 sm:py-28 lg:grid-cols-2 lg:items-center lg:px-8">
           <Reveal>
-            <div className="group rounded-4xl border border-black/5 bg-white p-4 shadow-xl shadow-orange-950/10 transition duration-500 hover:shadow-2xl hover:shadow-orange-950/15">
-              <div className="overflow-hidden rounded-3xl">
+            <div className="group overflow-hidden rounded-[1.75rem] border border-white bg-white p-3 shadow-[0_50px_100px_-50px_rgba(60,35,10,0.5)]">
+              <div className="overflow-hidden rounded-[1.25rem]">
                 <Image
                   src="/ecw-sprays.PNG"
                   alt="East Coast Wellness research sprays"
-                  width={1024}
-                  height={683}
-                  className="object-cover transition-transform duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]"
+                  width={1536}
+                  height={1024}
+                  className="object-cover transition-transform duration-[1400ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.03]"
                 />
               </div>
             </div>
           </Reveal>
           <div>
             <Reveal>
-              <Eyebrow>Quality posture</Eyebrow>
-              <h2 className="mt-4 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">
-                Premium presentation with a{" "}
-                <span className="text-gradient-ember font-display text-[1.1em] font-normal italic tracking-tight">
-                  compliance-first
-                </span>{" "}
+              <Eyebrow>Our standards</Eyebrow>
+              <h2 className="mt-5 font-display text-4xl leading-tight tracking-tight sm:text-5xl">
+                Premium presentation on a{" "}
+                <span className="text-gradient-copper italic">compliance-first</span>{" "}
                 foundation.
               </h2>
-              <p className="mt-5 text-lg leading-8 text-[#62564c]">
-                The storefront can support product documentation, batch-specific
+              <p className="mt-6 text-lg leading-8 text-muted">
+                The catalog supports product documentation, batch-specific
                 records, and fulfillment details without implying approved use,
                 therapeutic effect, or suitability for consumption.
               </p>
             </Reveal>
-            <div className="mt-8 grid gap-3 sm:grid-cols-2">
+            <dl className="mt-10 divide-y divide-ink/10 border-y border-ink/10">
               {standards.map((standard, index) => (
-                <Reveal key={standard} delay={index * 90}>
-                  <div className="group h-full rounded-2xl border border-black/10 bg-white p-5 font-semibold shadow-sm transition duration-300 hover:-translate-y-1 hover:border-[#ea7500]/40 hover:shadow-lg hover:shadow-orange-950/10">
-                    <span className="mb-4 block h-2 w-10 rounded-full bg-[#ea7500] transition-all duration-500 group-hover:w-16" />
-                    {standard}
+                <Reveal key={standard.title} delay={index * 80}>
+                  <div className="grid grid-cols-[2.5rem_1fr] gap-x-4 py-5">
+                    <span className="font-display text-xl italic text-copper">
+                      0{index + 1}
+                    </span>
+                    <div>
+                      <dt className="font-medium text-ink">{standard.title}</dt>
+                      <dd className="mt-1 text-sm leading-6 text-muted">{standard.body}</dd>
+                    </div>
                   </div>
                 </Reveal>
               ))}
-            </div>
+            </dl>
           </div>
         </div>
       </section>
 
-      <section
-        id="compliance"
-        className="relative border-y border-black/10 bg-[#fff8ef] px-6 py-20"
-      >
-        <Reveal className="mx-auto max-w-5xl text-center">
-          <Eyebrow center>Use notice</Eyebrow>
-          <h2 className="mt-4 text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">
-            Research-use products are not marketed as medicines, supplements, or
-            consumer health products.
+      <section className="mx-auto w-full max-w-7xl px-5 py-24 sm:px-6 sm:py-28 lg:px-8">
+        <Reveal className="max-w-2xl">
+          <Eyebrow>How ordering works</Eyebrow>
+          <h2 className="mt-5 font-display text-4xl leading-tight tracking-tight sm:text-5xl">
+            Three steps, <span className="italic text-copper">no surprises.</span>
           </h2>
-          <p className="mt-5 text-lg leading-8 text-[#62564c]">
+        </Reveal>
+        <ol className="mt-12 grid gap-4 md:grid-cols-3">
+          {steps.map((step, index) => (
+            <Reveal as="li" key={step.title} delay={index * 100}>
+              <div className="h-full rounded-2xl border border-ink/10 bg-white/70 p-7">
+                <span className="flex h-10 w-10 items-center justify-center rounded-full border border-copper/30 font-display text-lg text-copper">
+                  {index + 1}
+                </span>
+                <h3 className="mt-8 font-display text-2xl">{step.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted">{step.body}</p>
+              </div>
+            </Reveal>
+          ))}
+        </ol>
+        <Reveal className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-muted">
+          <span>Already ordered?</span>
+          <Link
+            href="/orders/lookup"
+            className="group inline-flex items-center gap-2 font-medium text-ink transition hover:text-copper"
+          >
+            <span className="link-underline">Track your order</span>
+            <ArrowIcon />
+          </Link>
+        </Reveal>
+      </section>
+
+      <section id="compliance" className="relative bg-sand/60 px-5 py-24 sm:px-6">
+        <Reveal className="mx-auto max-w-4xl text-center">
+          <Eyebrow center>Use notice</Eyebrow>
+          <h2 className="mt-6 font-display text-3xl leading-snug tracking-tight sm:text-[2.6rem]">
+            Research-use products are not marketed as medicines, supplements,
+            or consumer health products.
+          </h2>
+          <p className="mx-auto mt-6 max-w-3xl leading-8 text-muted">
             East Coast Wellness products shown here are intended for qualified
             laboratory research only. Product information is provided for
             identification and cataloging purposes and should not be interpreted
@@ -369,37 +416,7 @@ export default async function Home() {
         </Reveal>
       </section>
 
-      <footer className="relative bg-[#0d0a08] px-6 py-12 text-white">
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#ff9b32]/40 to-transparent"
-          aria-hidden="true"
-        />
-        <div className="mx-auto flex max-w-7xl flex-col gap-8 md:flex-row md:items-center md:justify-between">
-          <div className="w-fit rounded-2xl bg-white p-3">
-            <Logo className="h-auto w-52" />
-          </div>
-          <div className="flex flex-col gap-4 md:items-end">
-            <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm font-medium text-white/70">
-              <Link href="/store" className="link-underline transition hover:text-white">
-                Store
-              </Link>
-              <Link
-                href="/orders/lookup"
-                className="link-underline transition hover:text-white"
-              >
-                Order Lookup
-              </Link>
-              <Link href="/login" className="link-underline transition hover:text-white">
-                Login
-              </Link>
-            </nav>
-            <div className="max-w-2xl text-sm leading-6 text-white/55 md:text-right">
-              For research use only. Not for human or animal consumption. Not
-              intended to diagnose, treat, cure, or prevent any disease.
-            </div>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </main>
   );
 }

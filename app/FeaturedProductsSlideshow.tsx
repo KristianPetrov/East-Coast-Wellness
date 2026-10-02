@@ -1,11 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { InventoryByProductId } from "@/lib/inventory";
 import { ProductCard } from "./ProductCard";
 import type { PricingTier, ProductGroup } from "./products";
-
-const AUTO_ADVANCE_MS = 5500;
 
 type FeaturedProductsSlideshowProps = {
   groups: ProductGroup[];
@@ -13,147 +11,100 @@ type FeaturedProductsSlideshowProps = {
   pricingTier: PricingTier;
 };
 
+/**
+ * Horizontal, scroll-snapping rail of featured products. Visitors can swipe,
+ * scroll, or use the arrow buttons; nothing auto-advances under the cursor.
+ */
 export function FeaturedProductsSlideshow({
   groups,
   inventoryByProduct,
   pricingTier,
 }: FeaturedProductsSlideshowProps) {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
+  const railRef = useRef<HTMLDivElement>(null);
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(true);
+  const [progress, setProgress] = useState(0);
 
-  const count = groups.length;
+  const update = useCallback(() => {
+    const rail = railRef.current;
+    if (!rail) return;
 
-  const goTo = useCallback(
-    (index: number) => {
-      if (count === 0) return;
-      setActiveIndex(((index % count) + count) % count);
-    },
-    [count],
-  );
-
-  const next = useCallback(() => goTo(activeIndex + 1), [activeIndex, goTo]);
-  const prev = useCallback(() => goTo(activeIndex - 1), [activeIndex, goTo]);
+    const max = rail.scrollWidth - rail.clientWidth;
+    setCanPrev(rail.scrollLeft > 4);
+    setCanNext(rail.scrollLeft < max - 4);
+    setProgress(max > 0 ? rail.scrollLeft / max : 1);
+  }, []);
 
   useEffect(() => {
-    if (isPaused || count <= 1) return;
+    const rail = railRef.current;
+    if (!rail) return;
 
-    const timer = window.setInterval(() => {
-      setActiveIndex((current) => (current + 1) % count);
-    }, AUTO_ADVANCE_MS);
+    update();
+    rail.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      rail.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [update]);
 
-    return () => window.clearInterval(timer);
-  }, [isPaused, count]);
+  function scrollByCard(direction: 1 | -1) {
+    const rail = railRef.current;
+    const card = rail?.querySelector<HTMLElement>("[data-rail-item]");
+    if (!rail || !card) return;
 
-  if (count === 0) {
+    rail.scrollBy({ left: direction * (card.offsetWidth + 20), behavior: "smooth" });
+  }
+
+  if (groups.length === 0) {
     return null;
   }
 
-  const activeGroup = groups[activeIndex];
-
   return (
-    <div
-      className="relative mt-10"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
-      onFocusCapture={() => setIsPaused(true)}
-      onBlurCapture={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) {
-          setIsPaused(false);
-        }
-      }}
-    >
-      <div className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 shadow-2xl shadow-black/30 ring-1 ring-white/5">
-        <div
-          className="flex transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
-          style={{ transform: `translateX(-${activeIndex * 100}%)` }}
-        >
-          {groups.map((group, index) => (
-            <div
-              key={group.id}
-              aria-hidden={index !== activeIndex}
-              className={`w-full shrink-0 px-4 py-4 transition duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none sm:px-6 sm:py-6 lg:px-8 ${
-                index === activeIndex
-                  ? "scale-100 opacity-100"
-                  : "scale-[0.94] opacity-40"
-              }`}
-            >
-              <div className="mx-auto max-w-md sm:max-w-lg lg:max-w-xl">
-                <ProductCard
-                  group={group}
-                  theme="dark"
-                  inventoryByProduct={inventoryByProduct}
-                  pricingTier={pricingTier}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
+    <div className="mt-12">
+      <div
+        ref={railRef}
+        className="-mx-5 flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth px-5 pb-2 [scrollbar-width:none] sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 [&::-webkit-scrollbar]:hidden"
+        aria-label="Featured products"
+      >
+        {groups.map((group) => (
+          <div
+            key={group.id}
+            data-rail-item
+            className="w-[78%] shrink-0 snap-start sm:w-[46%] lg:w-[31%] xl:w-[23.5%]"
+          >
+            <ProductCard
+              group={group}
+              inventoryByProduct={inventoryByProduct}
+              pricingTier={pricingTier}
+            />
+          </div>
+        ))}
       </div>
 
-      {count > 1 ? (
-        <>
-          <div className="pointer-events-none absolute inset-y-0 left-0 right-0 flex items-center justify-between px-2 sm:px-4">
-            <SlideButton direction="prev" label="Previous product" onClick={prev} />
-            <SlideButton direction="next" label="Next product" onClick={next} />
-          </div>
-
-          <div className="mt-6 flex flex-col items-center gap-4">
-            <div
-              className="flex flex-wrap items-center justify-center gap-2"
-              role="tablist"
-              aria-label="Featured products"
-            >
-              {groups.map((group, index) => {
-                const isActive = index === activeIndex;
-
-                return (
-                  <button
-                    key={group.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={isActive}
-                    aria-label={`Show ${group.name}`}
-                    onClick={() => goTo(index)}
-                    className={
-                      isActive
-                        ? "h-2.5 w-8 rounded-full bg-[#ff9b32] transition-all duration-300"
-                        : "h-2.5 w-2.5 rounded-full bg-white/25 transition-all duration-300 hover:bg-white/45"
-                    }
-                  />
-                );
-              })}
-            </div>
-
-            <p className="text-center text-sm text-white/50">
-              <span className="font-semibold text-white/80">{activeGroup.name}</span>
-              <span className="mx-2 text-white/25">·</span>
-              {activeIndex + 1} of {count}
-            </p>
-
-            <div className="h-0.5 w-full max-w-xs overflow-hidden rounded-full bg-white/10">
-              <div
-                key={`${activeIndex}-${isPaused ? "paused" : "playing"}`}
-                className="featured-slideshow-progress h-full origin-left rounded-full bg-[#ff9b32]/80"
-                style={{
-                  animationDuration: `${AUTO_ADVANCE_MS}ms`,
-                  animationPlayState: isPaused ? "paused" : "running",
-                }}
-              />
-            </div>
-          </div>
-        </>
-      ) : null}
+      <div className="mt-8 flex items-center gap-6">
+        <div className="h-px flex-1 overflow-hidden bg-white/15">
+          <div
+            className="h-full origin-left bg-copper-bright transition-transform duration-300"
+            style={{ transform: `scaleX(${Math.max(0.08, progress)})` }}
+          />
+        </div>
+        <div className="flex gap-2">
+          <RailButton direction="prev" disabled={!canPrev} onClick={() => scrollByCard(-1)} />
+          <RailButton direction="next" disabled={!canNext} onClick={() => scrollByCard(1)} />
+        </div>
+      </div>
     </div>
   );
 }
 
-function SlideButton({
+function RailButton({
   direction,
-  label,
+  disabled,
   onClick,
 }: {
   direction: "prev" | "next";
-  label: string;
+  disabled: boolean;
   onClick: () => void;
 }) {
   const isPrev = direction === "prev";
@@ -161,18 +112,12 @@ function SlideButton({
   return (
     <button
       type="button"
-      aria-label={label}
+      aria-label={isPrev ? "Previous products" : "Next products"}
+      disabled={disabled}
       onClick={onClick}
-      className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-[#171411]/85 text-white shadow-lg backdrop-blur transition duration-300 hover:scale-110 hover:border-[#ff9b32]/50 hover:bg-[#302821] active:scale-95 sm:h-12 sm:w-12"
+      className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 text-white transition duration-300 hover:border-copper-bright hover:bg-white/5 active:scale-95 disabled:cursor-not-allowed disabled:opacity-30"
     >
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        className="h-5 w-5"
-        aria-hidden
-      >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="h-4 w-4" aria-hidden>
         {isPrev ? (
           <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
         ) : (

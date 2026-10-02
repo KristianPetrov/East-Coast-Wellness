@@ -8,26 +8,27 @@ type LogoProps = {
 };
 
 export function Logo({
-  className = "h-auto w-48 sm:w-64",
+  className = "h-auto w-40 sm:w-48",
   priority,
   href,
 }: LogoProps) {
   const content = (
-    <span className="logo-glow relative inline-block">
-      <span className="logo-glow-aura" aria-hidden="true" />
-      <Image
-        src="/ecw-logo-horizontal.PNG"
-        alt="East Coast Wellness"
-        width={832}
-        height={225}
-        className={`relative z-10 ${className}`}
-        priority={priority}
-      />
-    </span>
+    <Image
+      src="/ecw-logo-horizontal.PNG"
+      alt="East Coast Wellness"
+      width={853}
+      height={274}
+      className={className}
+      priority={priority}
+    />
   );
 
   if (href) {
-    return <Link href={href}>{content}</Link>;
+    return (
+      <Link href={href} className="shrink-0 rounded-md">
+        {content}
+      </Link>
+    );
   }
 
   return content;

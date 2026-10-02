@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { getCurrentPricingTier } from "@/lib/member-pricing";
 import { getProductsWithPrices } from "@/lib/pricing";
+import { SiteHeader } from "../SiteHeader";
 import { CheckoutPage } from "./CheckoutPage";
 
 export const metadata: Metadata = {
-  title: "Checkout | East Coast Wellness",
+  title: "Checkout",
   description: "Enter checkout and shipping details for East Coast Wellness.",
   robots: {
     index: false,
@@ -18,5 +19,10 @@ export default async function Page() {
     getProductsWithPrices(),
   ]);
 
-  return <CheckoutPage pricingTier={pricingTier} catalog={catalog} />;
+  return (
+    <>
+      <SiteHeader />
+      <CheckoutPage pricingTier={pricingTier} catalog={catalog} />
+    </>
+  );
 }

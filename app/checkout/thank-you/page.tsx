@@ -1,20 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { formatCents } from "@/lib/money";
-import { isShipStationEnabled } from "@/lib/shipstation";
-import {
-  buildVenmoPaymentUrl,
-  getOrderByNumberForEmail,
-  zellePhone,
-} from "@/lib/orders";
-import { ManualPaymentActions } from "@/app/ManualPaymentActions";
+import { getOrderByNumberForEmail } from "@/lib/orders";
+import { OrderDetails } from "@/app/orders/OrderDetails";
+import { SiteFooter } from "@/app/SiteFooter";
+import { SiteHeader } from "@/app/SiteHeader";
+import { ArrowIcon, btnGhost, btnPrimary, Eyebrow, PageIntro } from "@/app/ui";
 
 type PageProps = {
   searchParams: Promise<{ orderNumber?: string; email?: string }>;
 };
 
 export const metadata: Metadata = {
-  title: "Thank You | East Coast Wellness",
+  title: "Thank You",
   description: "East Coast Wellness order confirmation and payment details.",
   robots: {
     index: false,
@@ -29,154 +27,70 @@ export default async function Page({ searchParams }: PageProps) {
       ? await getOrderByNumberForEmail(orderNumber, email)
       : null;
 
-  if (!result) {
-    return (
-      <main className="min-h-screen bg-[#f7f2ea] px-6 py-14 text-[#171411]">
-        <section className="mx-auto max-w-3xl rounded-4xl border border-black/10 bg-white p-8 text-center shadow-xl shadow-orange-950/10">
-          <p className="text-sm font-bold uppercase tracking-[0.28em] text-[#c95f00]">
-            Thank You
-          </p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tighter">
-            We could not load that order.
-          </h1>
-          <p className="mt-4 text-[#62564c]">
-            Check the order number and email address used at checkout.
-          </p>
-          <Link
-            href="/orders/lookup"
-            className="mt-6 inline-block rounded-full bg-[#171411] px-6 py-3 text-sm font-bold text-white"
-          >
-            Look Up Order
-          </Link>
-        </section>
-      </main>
-    );
-  }
-
-  const { order, items } = result;
-  const venmoUrl = buildVenmoPaymentUrl(order);
-  const zelleCopyText = `Send ${formatCents(
-    order.totalCents,
-  )} by Zelle to ${zellePhone}. Include ${order.orderNumber} in the memo.`;
-
   return (
-    <main className="min-h-screen bg-[#f7f2ea] px-6 py-14 text-[#171411]">
-      <section className="mx-auto max-w-5xl">
-        <Link href="/" className="text-sm font-bold text-[#a24b00]">
-          East Coast Wellness
-        </Link>
-        <div className="mt-5 rounded-4xl border border-black/10 bg-white p-8 shadow-xl shadow-orange-950/10">
-          <p className="text-sm font-bold uppercase tracking-[0.28em] text-[#c95f00]">
-            Thank You
-          </p>
-          <div className="mt-4 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-            <div>
-              <h1 className="text-5xl font-semibold tracking-tighter">
-                Your order was received.
-              </h1>
-              <p className="mt-4 max-w-2xl text-lg leading-8 text-[#62564c]">
-                Order {order.orderNumber} is pending payment. An email has been
-                sent to {order.customerEmail}.
-              </p>
-            </div>
-            <p className="text-4xl font-semibold">
-              {formatCents(order.totalCents)}
-            </p>
-          </div>
-
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            <div className="rounded-3xl bg-[#fff8ef] p-5">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#a24b00]">
-                Order
-              </p>
-              <p className="mt-2 text-xl font-semibold">{order.orderStatus}</p>
-              <p className="mt-2 text-sm text-[#62564c]">{order.orderNumber}</p>
-            </div>
-            <div className="rounded-3xl bg-[#fff8ef] p-5">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#a24b00]">
-                Payment
-              </p>
-              <p className="mt-2 text-xl font-semibold capitalize">
-                {order.paymentStatus}
-              </p>
-            </div>
-            <div className="rounded-3xl bg-[#fff8ef] p-5">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#a24b00]">
-                Shipping
-              </p>
-              <p className="mt-2 text-xl font-semibold capitalize">
-                {order.shippingStatus}
-              </p>
-            </div>
-          </div>
-
-          {isShipStationEnabled() && order.shipStationAddressValidationStatus ? (
-            <div className="mt-6 rounded-3xl border border-black/10 bg-[#fffaf2] p-5">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#a24b00]">
-                Address Check
-              </p>
-              <p className="mt-2 text-xl font-semibold capitalize">
-                {order.shipStationAddressValidationStatus}
-              </p>
-              {order.shipStationAddressValidationMessage ? (
-                <p className="mt-2 text-sm leading-6 text-[#62564c]">
-                  {order.shipStationAddressValidationMessage}
-                </p>
-              ) : null}
-              {order.shipStationMatchedAddress ? (
-                <p className="mt-2 whitespace-pre-line text-sm leading-6 text-[#62564c]">
-                  {order.shipStationMatchedAddress}
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-
-          {order.orderStatus !== "cancelled" ? (
-            <div className="mt-6 rounded-3xl border border-black/10 bg-[#fffaf2] p-5">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#a24b00]">
-                Complete Payment
-              </p>
-              <p className="mt-3 text-sm leading-6 text-[#62564c]">
-                Venmo opens with the order total and {order.orderNumber} already
-                added to the note. For Zelle, copy the details and include the
-                order ID in the memo.
-              </p>
-              <ManualPaymentActions
-                venmoUrl={venmoUrl}
-                zelleCopyText={zelleCopyText}
-              />
-            </div>
-          ) : null}
-
-          <div className="mt-8 divide-y divide-black/10">
-            {items.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-start justify-between gap-4 py-4"
-              >
+    <>
+      <SiteHeader />
+      <main className="flex-1 bg-paper px-5 pb-24 pt-12 text-ink sm:px-6 sm:pt-16">
+        {result ? (
+          <OrderDetails
+            order={result.order}
+            items={result.items}
+            header={
+              <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
                 <div>
-                  <p className="font-semibold">{item.name}</p>
-                  <p className="mt-1 text-sm text-[#62564c]">
-                    {item.amount} · Qty {item.quantity}
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-sage text-white" aria-hidden>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className="draw-check h-5 w-5">
+                      <path d="M5 12.5l4.5 4.5L19 7.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                  <div className="mt-6">
+                    <Eyebrow>Thank you</Eyebrow>
+                  </div>
+                  <h1 className="mt-4 font-display text-4xl leading-tight tracking-tight sm:text-5xl">
+                    Your order was <span className="italic text-copper">received.</span>
+                  </h1>
+                  <p className="mt-4 max-w-xl leading-7 text-muted">
+                    Order <span className="font-medium text-ink">{result.order.orderNumber}</span>{" "}
+                    is pending payment. A confirmation email has been sent to{" "}
+                    {result.order.customerEmail}.
                   </p>
                 </div>
-                <p className="font-semibold">
-                  {formatCents(item.priceCents * item.quantity)}
+                <p className="font-display text-5xl tabular-nums">
+                  {formatCents(result.order.totalCents)}
                 </p>
               </div>
-            ))}
-          </div>
-
-          <Link
-            href={`/orders/${order.orderNumber}?email=${encodeURIComponent(
-              order.customerEmail,
-            )}`}
-            className="mt-6 inline-block rounded-full bg-[#ea7500] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#c95f00]"
-          >
-            View Order Status
-          </Link>
-        </div>
-      </section>
-    </main>
+            }
+            footer={
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Link
+                  href={`/orders/${result.order.orderNumber}?email=${encodeURIComponent(
+                    result.order.customerEmail,
+                  )}`}
+                  className={`group ${btnPrimary}`}
+                >
+                  View order status
+                  <ArrowIcon />
+                </Link>
+                <Link href="/store" className={btnGhost}>
+                  Continue shopping
+                </Link>
+              </div>
+            }
+          />
+        ) : (
+          <>
+            <PageIntro eyebrow="Thank you" title="We could not load" accent="that order.">
+              Check the order number and email address used at checkout.
+            </PageIntro>
+            <div className="mt-10 text-center">
+              <Link href="/orders/lookup" className={btnPrimary}>
+                Look up order
+              </Link>
+            </div>
+          </>
+        )}
+      </main>
+      <SiteFooter />
+    </>
   );
 }
