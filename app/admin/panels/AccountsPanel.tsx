@@ -23,7 +23,7 @@ export function AccountsPanel({ userRows, query }: { userRows: User[]; query?: s
   const memberCount = userRows.filter((user) => user.memberPricingEnabled).length;
 
   return (
-    <div className="grid gap-8">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-8">
       <PanelHeader
         title="Accounts"
         description="Enable special member pricing for individual accounts. Retail pricing remains the default for everyone else."

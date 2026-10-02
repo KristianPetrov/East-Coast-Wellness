@@ -66,7 +66,7 @@ export function InventoryPanel({
   };
 
   return (
-    <div className="grid gap-8">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-8">
       <PanelHeader
         title="Inventory"
         description="Stock shown here appears on the storefront and is decremented when checkout creates an order. Update quantities as you receive stock."

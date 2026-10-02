@@ -97,7 +97,7 @@ export function OrdersPanel({
   };
 
   return (
-    <div className="grid gap-8">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-8">
       <PanelHeader
         title="Orders"
         description="Confirm payments, add tracking, and manage every order from one place."

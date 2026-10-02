@@ -46,7 +46,7 @@ export function AddToCartButton({
       }}
       className={
         className ??
-        `btn-sheen inline-flex w-full items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-medium tracking-wide text-white transition duration-300 active:scale-95 disabled:cursor-not-allowed disabled:bg-faint sm:w-auto sm:px-5 sm:text-sm ${
+        `btn-sheen inline-flex w-full items-center justify-center gap-1.5 rounded-full px-4 py-2.5 text-xs font-medium tracking-wide text-white transition duration-300 active:scale-95 disabled:cursor-not-allowed disabled:bg-faint sm:py-3 sm:text-sm ${
           added
             ? "bg-sage"
             : blocked

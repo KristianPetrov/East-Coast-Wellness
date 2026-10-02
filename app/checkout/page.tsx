@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getCurrentPricingTier } from "@/lib/member-pricing";
 import { getProductsWithPrices } from "@/lib/pricing";
+import { SiteFooter } from "../SiteFooter";
 import { SiteHeader } from "../SiteHeader";
 import { CheckoutPage } from "./CheckoutPage";
 
@@ -23,6 +24,7 @@ export default async function Page() {
     <>
       <SiteHeader />
       <CheckoutPage pricingTier={pricingTier} catalog={catalog} />
+      <SiteFooter />
     </>
   );
 }

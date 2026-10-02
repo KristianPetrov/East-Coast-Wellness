@@ -53,9 +53,11 @@ export async function SiteHeader({ overlay = false }: { overlay?: boolean }) {
         >
           {account.label}
         </Link>
-        <Link href="/store" className={`${btnPrimary} hidden px-5! py-2.5! sm:inline-flex`}>
-          Shop the catalog
-        </Link>
+        <div className="hidden sm:block">
+          <Link href="/store" className={`${btnPrimary} px-5! py-2.5!`}>
+            Shop the catalog
+          </Link>
+        </div>
         <CartButton />
         <MobileNav
           className="lg:hidden"

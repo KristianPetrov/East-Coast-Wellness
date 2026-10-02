@@ -137,8 +137,10 @@ export function FloatingCart({ pricingTier, catalog }: FloatingCartProps) {
           role="dialog"
           aria-modal="true"
           aria-label="Cart"
-          className={`absolute inset-y-0 right-0 flex w-full max-w-md flex-col bg-paper text-ink shadow-[-30px_0_60px_-30px_rgba(0,0,0,0.45)] transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-            isOpen ? "translate-x-0" : "translate-x-full"
+          className={`absolute inset-y-0 right-0 flex w-full max-w-md flex-col bg-paper text-ink transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+            isOpen
+              ? "translate-x-0 shadow-[-30px_0_60px_-30px_rgba(0,0,0,0.45)]"
+              : "translate-x-full shadow-none"
           }`}
         >
           <div className="flex items-center justify-between border-b border-ink/10 px-6 py-5">

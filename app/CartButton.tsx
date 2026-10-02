@@ -24,7 +24,7 @@ export function CartButton() {
       type="button"
       onClick={openCart}
       aria-label={`Open cart, ${count} ${count === 1 ? "item" : "items"}`}
-      className="relative flex h-11 w-11 items-center justify-center rounded-full border border-ink/12 bg-bone/70 text-ink transition duration-300 hover:border-ink/25 hover:bg-bone active:scale-95"
+      className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-ink/12 bg-bone/70 text-ink transition duration-300 hover:border-ink/25 hover:bg-bone active:scale-95"
     >
       <svg
         viewBox="0 0 24 24"

@@ -179,12 +179,12 @@ export function ProductCard({
           </div>
         ) : null}
 
-        <div className="mt-auto flex items-center justify-between gap-3 border-t border-ink/8 pt-4">
-          <span className="hidden text-[11px] uppercase tracking-[0.16em] text-faint sm:inline">
-            {packageType === "kit" && availablePackages !== undefined && !isOutOfStock
-              ? `${availablePackages} ${availablePackages === 1 ? "kit" : "kits"} available`
-              : "Research use only"}
-          </span>
+        <div className="mt-auto grid gap-2 border-t border-ink/8 pt-4">
+          {packageType === "kit" && availablePackages !== undefined && !isOutOfStock ? (
+            <span className="text-[11px] uppercase tracking-[0.14em] text-faint">
+              {`${availablePackages} ${availablePackages === 1 ? "kit" : "kits"} available`}
+            </span>
+          ) : null}
           <AddToCartButton
             key={`${selected.id}-${packageType}`}
             product={selected}
