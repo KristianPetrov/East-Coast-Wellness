@@ -62,15 +62,20 @@ export function FeaturedProductsSlideshow({
         }
       }}
     >
-      <div className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 shadow-2xl shadow-black/30">
+      <div className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 shadow-2xl shadow-black/30 ring-1 ring-white/5">
         <div
           className="flex transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
           style={{ transform: `translateX(-${activeIndex * 100}%)` }}
         >
-          {groups.map((group) => (
+          {groups.map((group, index) => (
             <div
               key={group.id}
-              className="w-full shrink-0 px-4 py-4 sm:px-6 sm:py-6 lg:px-8"
+              aria-hidden={index !== activeIndex}
+              className={`w-full shrink-0 px-4 py-4 transition duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none sm:px-6 sm:py-6 lg:px-8 ${
+                index === activeIndex
+                  ? "scale-100 opacity-100"
+                  : "scale-[0.94] opacity-40"
+              }`}
             >
               <div className="mx-auto max-w-md sm:max-w-lg lg:max-w-xl">
                 <ProductCard
@@ -158,7 +163,7 @@ function SlideButton({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-[#171411]/85 text-white shadow-lg backdrop-blur transition hover:border-[#ff9b32]/50 hover:bg-[#302821] sm:h-12 sm:w-12"
+      className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-[#171411]/85 text-white shadow-lg backdrop-blur transition duration-300 hover:scale-110 hover:border-[#ff9b32]/50 hover:bg-[#302821] active:scale-95 sm:h-12 sm:w-12"
     >
       <svg
         viewBox="0 0 24 24"

@@ -58,17 +58,24 @@ export function ProductCard({
     <article
       className={
         isDark
-          ? "overflow-hidden rounded-3xl border border-white/10 bg-white/6 shadow-xl shadow-black/20 transition hover:border-[#ea7500]/60 hover:bg-white/9"
-          : "overflow-hidden rounded-3xl border border-black/10 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl hover:shadow-orange-950/10"
+          ? "group overflow-hidden rounded-3xl border border-white/10 bg-white/6 shadow-xl shadow-black/20 transition duration-500 hover:border-[#ea7500]/60 hover:bg-white/9"
+          : "group overflow-hidden rounded-3xl border border-black/10 bg-white shadow-sm transition duration-500 hover:-translate-y-1.5 hover:border-[#ea7500]/30 hover:shadow-2xl hover:shadow-orange-950/15"
       }
     >
-      <div className={isDark ? "bg-white/95 p-2.5 sm:p-5" : "bg-[#fffaf2] p-2.5 sm:p-5"}>
+      <div
+        className={`overflow-hidden ${
+          isDark
+            ? "bg-white/95 p-2.5 sm:p-5"
+            : "bg-[radial-gradient(circle_at_50%_40%,#ffffff_0%,#fff6e8_75%)] p-2.5 sm:p-5"
+        }`}
+      >
         <Image
+          key={selected.id}
           src={selected.image}
           alt={`${group.name} ${selected.amount} research product`}
           width={640}
           height={640}
-          className="aspect-square w-full rounded-2xl object-contain sm:rounded-3xl"
+          className="animate-fade aspect-square w-full rounded-2xl object-contain transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.05] sm:rounded-3xl"
         />
       </div>
 
@@ -176,10 +183,10 @@ export function ProductCard({
                 onClick={() => setSelectedPackageType(option)}
                 className={
                   packageType === option
-                    ? "rounded-xl bg-[#ea7500] px-2 py-2 text-xs font-bold text-white"
+                    ? "rounded-xl bg-[#ea7500] px-2 py-2 text-xs font-bold text-white shadow-sm shadow-orange-900/20 transition duration-300"
                     : isDark
-                      ? "rounded-xl px-2 py-2 text-xs font-bold text-white/65 transition hover:bg-white/8 hover:text-white"
-                      : "rounded-xl px-2 py-2 text-xs font-bold text-[#62564c] transition hover:bg-white hover:text-[#171411]"
+                      ? "rounded-xl px-2 py-2 text-xs font-bold text-white/65 transition duration-300 hover:bg-white/8 hover:text-white"
+                      : "rounded-xl px-2 py-2 text-xs font-bold text-[#62564c] transition duration-300 hover:bg-white hover:text-[#171411]"
                 }
               >
                 {getProductPackageLabel(option)}
